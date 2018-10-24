@@ -1,0 +1,6 @@
+[package]
+name = "TextToUML"
+version = "0.1.0"
+authors = ["starlesschris <chkrebel98@gmail.com>"]
+
+[dependencies]
