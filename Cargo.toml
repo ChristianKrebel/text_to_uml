@@ -1,6 +1,7 @@
 [package]
 name = "text_to_uml"
 version = "0.1.0"
-authors = ["starlesschris <chkrebel98@gmail.com>"]
+authors = ["starlesschris <chkrebel98@gmail.com>", "viddie <viddie@hotmail.de>"]
 
 [dependencies]
+conrod = { version = "0.55.0", features = ["glium", "winit"] }
