@@ -2,6 +2,8 @@
 
 use conrod::backend::glium::glium::{self, Surface};
 
+mod parser; // load module file parser.rs
+
 fn main() {
-    println!("Hello, world!");
+    println!("{}", parser::example()); //use parser's function
 }
