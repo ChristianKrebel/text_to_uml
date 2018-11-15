@@ -15,7 +15,7 @@ use self::rand::Rng;
 use self::image::{DynamicImage, GenericImage, Pixel, Rgba, RgbaImage, ImageFormat};
 
 
-pub fn test() {
+pub fn generate_pic(obj_list: &Vec<Struct>) {
 
     let imgx = 1080;
     let imgy = 1080;
@@ -24,7 +24,7 @@ pub fn test() {
     //let scaley = 4.0 / imgy as f32;
 
 
-    let path = Path::new("1.png");
+    let path = Path::new("output.png");
 
     let white = Rgba([255u8, 255u8, 255u8, 255u8]);
     let red = Rgba([255u8, 0u8, 0u8, 127u8]);
@@ -46,27 +46,13 @@ pub fn test() {
     let mut imgbuf = image::RgbaImage::new(imgx, imgy);
     //let mut img = RgbaImage::new(imgx, imgy);
     //let mut img = image::open(path).unwrap();
-    draw_filled_rect_mut(
-        &mut imgbuf, imageproc::rect::Rect::at(0, 0).of_size(imgx, imgy),
-        white);
-    draw_hollow_rect_mut(
-        &mut imgbuf, imageproc::rect::Rect::at(75, 75).of_size(209, 30),
-        black);
-    draw_hollow_rect_mut(
-        &mut imgbuf, imageproc::rect::Rect::at(75, 75).of_size(209, 60),
-        black);                              // height +30, width = längste Stringlänge * 11
-    draw_hollow_rect_mut(
-        &mut imgbuf, imageproc::rect::Rect::at(75, 75).of_size(209, 90),
-        black);
-    draw_text_mut(
-        &mut imgbuf, black, 80, 77, scale2, &font, "Test"); // y + 30
-    draw_text_mut(
-        &mut imgbuf, black, 80, 107, scale2, &font, "- Farbe: Color");
-    draw_text_mut(
-        &mut imgbuf, black, 80, 137, scale2, &font, "+ getFarbe(): Color");
 
-    //let mut file = File::create(path).unwrap();
-
+    // ------ DRAW -------
+    for i in &obj_list {
+        if i.type == "class" {
+            draw_class(&imgbuf, &i);
+        }
+    }
 
     imgbuf.save(&path).unwrap();
 
@@ -95,5 +81,27 @@ pub fn test() {
     // Save the image as “fractal.png”, the format is deduced from the path
     //imgbuf.save("test.png").unwrap();
     //img.save(&mut File::create(&Path::new("output.png")).unwrap(), image::PNG);
+
+}
+
+pub fn draw_class(&mut buffer: image::RgbaImage, &struc: Struct) {
+    draw_filled_rect_mut(
+        &mut imgbuf, imageproc::rect::Rect::at(0, 0).of_size(imgx, imgy),
+        white);
+    draw_hollow_rect_mut(
+        &mut imgbuf, imageproc::rect::Rect::at(75, 75).of_size(209, 30),
+        black);
+    draw_hollow_rect_mut(
+        &mut imgbuf, imageproc::rect::Rect::at(75, 75).of_size(209, 60),
+        black);                              // height +30, width = längste Stringlänge * 11
+    draw_hollow_rect_mut(
+        &mut imgbuf, imageproc::rect::Rect::at(75, 75).of_size(209, 90),
+        black);
+    draw_text_mut(
+        &mut imgbuf, black, 80, 77, scale2, &font, "Test"); // y + 30
+    draw_text_mut(
+        &mut imgbuf, black, 80, 107, scale2, &font, "- Farbe: Color");
+    draw_text_mut(
+        &mut imgbuf, black, 80, 137, scale2, &font, "+ getFarbe(): Color");
 
 }

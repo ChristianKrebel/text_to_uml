@@ -7,5 +7,5 @@ mod generator;
 fn main() {
     println!("{}", parser::example()); //use parser's function
     //gui::start();
-    generator::test();
+    generator::generate_pic();
 }
