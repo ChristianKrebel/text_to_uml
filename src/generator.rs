@@ -1,8 +1,12 @@
+#[allow(unused_variables, unused_mut, unused)]
+
 extern crate image;
 extern crate imageproc;
 extern crate rand;
+
 use self::imageproc::rect::*;
 use self::imageproc::drawing::*;
+use rusttype::{point, Font, Scale};
 
 use std::fs::File;
 use std::path::Path;
@@ -25,15 +29,41 @@ pub fn test() {
     let white = Rgba([255u8, 255u8, 255u8, 255u8]);
     let red = Rgba([255u8, 0u8, 0u8, 127u8]);
     let blue = Rgba([0u8, 0u8, 255u8, 127u8]);
+    let black = Rgba([0u8, 0u8, 0u8, 255u8]);
+
+    // Load the font
+    let font_data = include_bytes!("../fonts/Roboto-Regular.ttf");
+    // This only succeeds if collection consists of one font
+    let font = Font::from_bytes(font_data as &[u8]).expect("Error constructing Font");
+
+    // The font size to use
+    let scale = Scale::uniform(32.0);
+    let scale2 = Scale::uniform(26.0);
+
 
 
     // Create a new ImgBuf with width: imgx and height: imgy
     let mut imgbuf = image::RgbaImage::new(imgx, imgy);
     //let mut img = RgbaImage::new(imgx, imgy);
     //let mut img = image::open(path).unwrap();
-    draw_hollow_rect_mut(
-        &mut imgbuf, imageproc::rect::Rect::at(75, 75).of_size(100, 300),
+    draw_filled_rect_mut(
+        &mut imgbuf, imageproc::rect::Rect::at(0, 0).of_size(imgx, imgy),
         white);
+    draw_hollow_rect_mut(
+        &mut imgbuf, imageproc::rect::Rect::at(75, 75).of_size(209, 30),
+        black);
+    draw_hollow_rect_mut(
+        &mut imgbuf, imageproc::rect::Rect::at(75, 75).of_size(209, 60),
+        black);                              // height +30, width = längste Stringlänge * 11
+    draw_hollow_rect_mut(
+        &mut imgbuf, imageproc::rect::Rect::at(75, 75).of_size(209, 90),
+        black);
+    draw_text_mut(
+        &mut imgbuf, black, 80, 77, scale2, &font, "Test"); // y + 30
+    draw_text_mut(
+        &mut imgbuf, black, 80, 107, scale2, &font, "- Farbe: Color");
+    draw_text_mut(
+        &mut imgbuf, black, 80, 137, scale2, &font, "+ getFarbe(): Color");
 
     //let mut file = File::create(path).unwrap();
 

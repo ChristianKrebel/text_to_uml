@@ -4,6 +4,7 @@ version = "0.1.0"
 authors = ["starlesschris <chkrebel98@gmail.com>", "viddie <viddie@hotmail.de>"]
 
 [dependencies]
+rusttype = "0.5.2"
 conrod = { version = "0.55.0", features = ["glium", "winit"] }
 image = "*"
 imageproc = "0.16.0"
