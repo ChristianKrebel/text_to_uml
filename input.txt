@@ -1,0 +1,7 @@
+Class:Klasse1
+private String name
+--
+public void main()
+public String name()
+
+Class { class_type: SimpleClass, class_name: "Klasse1", border_width: 0, content_lines: ["- String name", "", "+ void main()", "+ String name()", ""], content_decor: [None, HorizontalLine, None, None, None] }
