@@ -4,32 +4,57 @@ extern crate image;
 extern crate imageproc;
 extern crate rand;
 
+
+use defines::*;
+
 use self::imageproc::rect::*;
 use self::imageproc::drawing::*;
 use rusttype::{point, Font, Scale};
 
+use std::vec::Vec;
 use std::fs::File;
 use std::path::Path;
 use self::rand::Rng;
 
 use self::image::{DynamicImage, GenericImage, Pixel, Rgba, RgbaImage, ImageFormat};
 
+struct Colors {
+    white: image::Rgba<u8>,
+    black: image::Rgba<u8>,
+    red: image::Rgba<u8>,
+    blue: image::Rgba<u8>
+}
+struct Scales {
+    one: Scale,
+    two: Scale,
+}
+struct XY {
+    x: u32,
+    y: u32,
+}
+struct General {
+    buffer: image::RgbaImage,
+    imgxy: XY,
+    colors: Colors,
+    scales : Scales,
+}
 
-pub fn generate_pic(obj_list: &Vec<Struct>) {
 
-    let imgx = 1080;
-    let imgy = 1080;
-
-    //let scalex = 4.0 / imgx as f32;
-    //let scaley = 4.0 / imgy as f32;
-
+pub fn generate_pic(class_vec: &mut Vec<Class>, rel_vec: &mut Vec<Relation>) {
 
     let path = Path::new("output.png");
 
-    let white = Rgba([255u8, 255u8, 255u8, 255u8]);
-    let red = Rgba([255u8, 0u8, 0u8, 127u8]);
-    let blue = Rgba([0u8, 0u8, 255u8, 127u8]);
-    let black = Rgba([0u8, 0u8, 0u8, 255u8]);
+    let xy: XY = XY {
+        x: 1080,
+        y: 1080,
+    };
+
+    let colors: Colors = Colors {
+        white: Rgba([255u8, 255u8, 255u8, 255u8]),
+        black: Rgba([0u8, 0u8, 0u8, 255u8]),
+        red: Rgba([255u8, 0u8, 0u8, 127u8]),
+        blue: Rgba([0u8, 0u8, 255u8, 127u8]),
+    };
 
     // Load the font
     let font_data = include_bytes!("../fonts/Roboto-Regular.ttf");
@@ -37,20 +62,28 @@ pub fn generate_pic(obj_list: &Vec<Struct>) {
     let font = Font::from_bytes(font_data as &[u8]).expect("Error constructing Font");
 
     // The font size to use
-    let scale = Scale::uniform(32.0);
-    let scale2 = Scale::uniform(26.0);
-
+    let scales: Scales = Scales {
+        one: Scale::uniform(32.0),
+        two: Scale::uniform(26.0),
+    };
 
 
     // Create a new ImgBuf with width: imgx and height: imgy
-    let mut imgbuf = image::RgbaImage::new(imgx, imgy);
+    let mut imgbuf = image::RgbaImage::new(xy.x, xy.y);
     //let mut img = RgbaImage::new(imgx, imgy);
     //let mut img = image::open(path).unwrap();
 
+    let general: General = General {
+        buffer: imgbuf,
+        imgxy: xy,
+        colors: colors,
+        scales: scales,
+    };
+
     // ------ DRAW -------
-    for i in &obj_list {
-        if i.type == "class" {
-            draw_class(&imgbuf, &i);
+    for c in class_vec.iter() {
+        if c.class_type == ClassType::SimpleClass {
+            draw_class(&general, &font, &c);
         }
     }
 
@@ -84,24 +117,35 @@ pub fn generate_pic(obj_list: &Vec<Struct>) {
 
 }
 
-pub fn draw_class(&mut buffer: image::RgbaImage, &struc: Struct) {
-    draw_filled_rect_mut(
-        &mut imgbuf, imageproc::rect::Rect::at(0, 0).of_size(imgx, imgy),
-        white);
-    draw_hollow_rect_mut(
-        &mut imgbuf, imageproc::rect::Rect::at(75, 75).of_size(209, 30),
-        black);
-    draw_hollow_rect_mut(
-        &mut imgbuf, imageproc::rect::Rect::at(75, 75).of_size(209, 60),
-        black);                              // height +30, width = längste Stringlänge * 11
-    draw_hollow_rect_mut(
-        &mut imgbuf, imageproc::rect::Rect::at(75, 75).of_size(209, 90),
-        black);
-    draw_text_mut(
-        &mut imgbuf, black, 80, 77, scale2, &font, "Test"); // y + 30
-    draw_text_mut(
-        &mut imgbuf, black, 80, 107, scale2, &font, "- Farbe: Color");
-    draw_text_mut(
-        &mut imgbuf, black, 80, 137, scale2, &font, "+ getFarbe(): Color");
+pub fn draw_class(general: &General, font: &Font, class: &Class) {
 
+    let buffer = &general.buffer;
+    let x = general.imgxy.x;
+    let y = general.imgxy.y;
+    let colors = &general.colors;
+    let scales = &general.scales;
+
+    draw_filled_rect_mut(
+        buffer, imageproc::rect::Rect::at(0, 0).of_size(x, y),
+        &colors.white);
+
+    match class.class_type {
+        ClassType::SimpleClass => {
+            draw_hollow_rect_mut(
+                buffer, imageproc::rect::Rect::at(75, 75).of_size(209, 30),
+                &colors.black);
+            draw_hollow_rect_mut(
+                buffer, imageproc::rect::Rect::at(75, 75).of_size(209, 60),
+                &colors.black);                              // height +30, width = längste Stringlänge * 11
+            draw_hollow_rect_mut(
+                buffer, imageproc::rect::Rect::at(75, 75).of_size(209, 90),
+                &colors.black);
+            draw_text_mut(
+                buffer, &colors.black, 80, 77, scales.one, &font, &class.class_name); // y + 30
+            for line in class.content_lines.iter() {
+                draw_text_mut(
+                    buffer, &colors.black, 80, 107, scales.two, &font, &line);
+            }
+        }
+    }
 }
