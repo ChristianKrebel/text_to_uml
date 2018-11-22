@@ -1,7 +1,15 @@
 Class:Klasse1
 private String name
 --
-public void main()
+public static void main()
 public String name()
 
-Class { class_type: SimpleClass, class_name: "Klasse1", border_width: 0, content_lines: ["- String name", "", "+ void main()", "+ String name()", ""], content_decor: [None, HorizontalLine, None, None, None] }
+AbstractClass:Klasse2
+<<interface>>
+--
+public boolean fkt1()
+public int fkt2()
+
+Association
+Klasse1,Klasse2
+1,n
