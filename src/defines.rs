@@ -25,6 +25,15 @@ pub enum RelationType{
 
 #[derive(Debug)]
 #[derive(PartialEq)]
+pub enum RelationArrow{
+    Arrow,
+    TriangleEmpty,
+    DiamondEmpty,
+    DiamondFilled
+}
+
+#[derive(Debug)]
+#[derive(PartialEq)]
 pub enum BorderType{
     Solid,
     Dashed,
@@ -46,6 +55,7 @@ pub enum TextDecoration{
 pub struct Class{
     pub class_type: ClassType,
     pub class_name: String,
+    pub class_stereotype: String,
     pub border_width: i32,
     pub content_lines: Vec<String>,
     pub content_decor: Vec<TextDecoration>
@@ -53,11 +63,12 @@ pub struct Class{
 
 #[derive(Debug)]
 pub struct Relation{
-    border_type: BorderType,
-    from_class: String,
-    from_arrow_head: RelationType,
-    to_class: String,
-    to_arrow_head: RelationType
+    pub border_type: BorderType,
+    pub arrow_type: RelationArrow,
+    pub from_class: String,
+    pub from_class_card: String,
+    pub to_class: String,
+    pub to_class_card: String
 }
 
 #[derive(Debug)]
