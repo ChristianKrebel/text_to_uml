@@ -14,13 +14,10 @@ use defines::*;
 
 
 // Testing Modul. Delete this function and implement your own Hannes.
-pub fn init(filename: &str) -> String{
+pub fn init(filename: &str, mut classes: &mut Vec<Class>, mut relations: &mut Vec<Relation>) -> String{
 
     let mut vec: Vec<String> = Vec::new();
     read_file(&mut vec, filename);
-
-    let mut classes: Vec<Class> = Vec::new();
-    let mut relations: Vec<Relation> = Vec::new();
 
     parse_lines(&mut vec, &mut classes, &mut relations);
 
@@ -142,7 +139,7 @@ fn parse_lines(lines: &mut Vec<String>, classes: &mut Vec<Class>, relations: &mu
             let mut from_card = cards_split_list.get(0).unwrap();
             let mut to_card = cards_split_list.get(1).unwrap();
 
-            let mut relation: Relation = Relation {arrow_type: , border_type: relation_border, from_class: String::from_str(*from_class_name).unwrap(), from_class_card: String::from_str(from_card).unwrap(), to_class: String::from_str(to_class_name).unwrap(), to_class_card: String::from_str(to_card).unwrap()};
+            let mut relation: Relation = Relation {arrow_type, border_type: relation_border, from_class: String::from_str(*from_class_name).unwrap(), from_class_card: String::from_str(from_card).unwrap(), to_class: String::from_str(to_class_name).unwrap(), to_class_card: String::from_str(to_card).unwrap()};
             println!("Full struct for relation: {:?}", relation);
 
             relations.push(relation);

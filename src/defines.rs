@@ -29,7 +29,8 @@ pub enum RelationArrow{
     Arrow,
     TriangleEmpty,
     DiamondEmpty,
-    DiamondFilled
+    DiamondFilled,
+    None
 }
 
 #[derive(Debug)]
