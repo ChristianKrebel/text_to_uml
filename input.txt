@@ -4,7 +4,7 @@ private String name
 public static void main()
 public String name()
 
-AbstractClass:Klasse2
+Class:Klasse2
 <<interface>>
 --
 public boolean fkt1()

@@ -69,7 +69,7 @@ pub fn generate_pic(class_vec: &mut Vec<Class>, rel_vec: &mut Vec<Relation>) {
 
 
     // Create a new ImgBuf with width: imgx and height: imgy
-    //let mut imgbuf = image::RgbaImage::new(xy.x, xy.y);
+    let mut imgbuf = image::RgbaImage::new(xy.x, xy.y);
     //let mut img = RgbaImage::new(imgx, imgy);
     //let mut img = image::open(path).unwrap();
 
@@ -80,11 +80,17 @@ pub fn generate_pic(class_vec: &mut Vec<Class>, rel_vec: &mut Vec<Relation>) {
         scales: scales,
     };
 
+    draw_filled_rect_mut(
+        &mut imgbuf, imageproc::rect::Rect::at(0, 0).of_size(general.imgxy.x, general.imgxy.y),
+        general.colors.white);
+
+    let mut i:i32 = 0;
+    let mut e:i32= 0;
+    let mut add_to_i: i32 = 0;
     // ------ DRAW -------
     for c in class_vec.iter() {
-        if c.class_type == ClassType::SimpleClass {
-            draw_class(&mut imgbuf, &general, &font, &c);
-        }
+        add_to_i = draw_class(&mut imgbuf, &general, &font, &c, i, e);
+        i += add_to_i + 50;
     }
 
     imgbuf.save(&path).unwrap();
@@ -117,7 +123,7 @@ pub fn generate_pic(class_vec: &mut Vec<Class>, rel_vec: &mut Vec<Relation>) {
 
 }
 
-pub fn draw_class(buffer: &mut image::RgbaImage, general: &General, font: &Font, class: &Class) {
+pub fn draw_class(buffer: &mut image::RgbaImage, general: &General, font: &Font, class: &Class, i:i32, e:i32) -> i32 {
 
     //let &buffer = &general.buffer;
     let x = general.imgxy.x;
@@ -125,26 +131,43 @@ pub fn draw_class(buffer: &mut image::RgbaImage, general: &General, font: &Font,
     let colors = &general.colors;
     let scales = &general.scales;
 
-    draw_filled_rect_mut(
-        buffer, imageproc::rect::Rect::at(0, 0).of_size(x, y),
-        colors.white);
+    let mut width = 0;
+    for line in class.content_lines.iter() {
+        if line.len() > width {
+            width = line.len();
+        }
+    }
+    if class.class_name.len() > width {
+        width = class.class_name.len();
+    }
+    width *= 11;
+    let mut lt = x;
+    let mut rt = x + width as u32;
+    let mut lb: u32;
+    let mut rb: u32;
+
+
 
     match class.class_type {
         ClassType::SimpleClass => {
             draw_hollow_rect_mut(
-                buffer, imageproc::rect::Rect::at(75, 75).of_size(209, 30),
+                buffer, imageproc::rect::Rect::at(i, e).of_size(209, 30),
                 colors.black);
             draw_hollow_rect_mut(
-                buffer, imageproc::rect::Rect::at(75, 75).of_size(209, 60),
+                buffer, imageproc::rect::Rect::at(i, e).of_size(209, 60),
                 colors.black);                              // height +30, width = längste Stringlänge * 11
             draw_hollow_rect_mut(
-                buffer, imageproc::rect::Rect::at(75, 75).of_size(209, 90),
+                buffer, imageproc::rect::Rect::at(i, e).of_size(209, 90),
                 colors.black);
+            let mut j = i as u32 + 5;
+            let mut k:u32 = 0;
+            let mut name_length = class.class_name.len() as u32;
             draw_text_mut(
-                buffer, colors.black, 80, 77, scales.one, &font, &class.class_name); // y + 30
+                buffer, colors.black, j + 5, k, scales.one, &font, &class.class_name); // y + 30
             for line in class.content_lines.iter() {
+                k += 30;
                 draw_text_mut(
-                    buffer, colors.black, 80, 107, scales.two, &font, &line);
+                    buffer, colors.black, j, k, scales.two, &font, &line);
             }
         }
         ClassType::AbstractClass => {
@@ -163,4 +186,5 @@ pub fn draw_class(buffer: &mut image::RgbaImage, general: &General, font: &Font,
 
         }
     }
+    return width as i32;
 }
