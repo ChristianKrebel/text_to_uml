@@ -19,8 +19,7 @@ use self::rand::Rng;
 
 use self::image::{DynamicImage, GenericImage, Pixel, Rgba, RgbaImage, ImageFormat};
 
-struct FullClass {
-    class: Class,
+struct ClassLayout {
     lt: XY,
     rt: XY,
     lb: XY,
@@ -58,7 +57,7 @@ pub fn generate_pic(class_vec: &mut Vec<Class>, rel_vec: &mut Vec<Relation>) {
     let path = Path::new("output.png");
 
     // ------ Layouting all classes ------
-    let mut full_class_vec: Vec<FullClass> = Vec::new();
+    let mut class_layout_vec: Vec<ClassLayout> = Vec::new();
     let mut class_count = class_vec.len();
 
     // calc heights for upper half of classes (uneven)
@@ -107,9 +106,10 @@ pub fn generate_pic(class_vec: &mut Vec<Class>, rel_vec: &mut Vec<Relation>) {
 
     let mut last_left_distance_uneven: u32 = 50;
     let mut last_left_distance_even: u32 = 50;
+
     for (i,c) in class_vec.iter().enumerate() {
         let mut greatest_width: u32 = 0;
-        for line in c.content_lines {
+        for line in c.content_lines.iter() {
             if line.len() as u32 > greatest_width {
                 greatest_width = line.len() as u32;
             }
@@ -128,27 +128,45 @@ pub fn generate_pic(class_vec: &mut Vec<Class>, rel_vec: &mut Vec<Relation>) {
         }
         height *= LINE_HEIGHT;
 
+        let mut lb: XY = XY {x: 0, y: 0};
+        let mut rb: XY = XY {x: 0, y: 0};
+        let mut lt: XY = XY {x: 0, y: 0};
+        let mut rt: XY = XY {x: 0, y: 0};
         if i % 2 != 0 {
-            lb = last_left_distance_uneven;
+            lb = XY {x: last_left_distance_uneven, y: base_line_first_half};
+            rb = XY {x: lb.x + greatest_width, y: lb.y};
+            lt = XY {x: lb.x, y: lb.y - height};
+            rt = XY {x: rb.x, y: lt.y};
         } else {
-            lb = last_left_distance_even;
+            lt = XY {x: last_left_distance_even, y: top_line_second_half};
+            rt = XY {x: lt.x + greatest_width, y: lt.y};
+            lb = XY {x: lt.x, y: lt.y + height};
+            rb = XY {x: rt.x, y: lb.y}
         }
-        /*let full_class: Full_class = Full_class {
-            class: c,
-            lt: ,
-            rt: ,
-            lb: ,
-            rb: ,
+
+        let class_layout: ClassLayout = ClassLayout {
+            lt: lt,
+            rt: rt,
+            lb: lb,
+            rb: rb,
             height: height,
             width: greatest_width
-        };*/
+        };
+        class_layout_vec.push(class_layout);
+        if i & 2 != 0 {
+            last_left_distance_uneven += greatest_width + 100;
+        } else {
+            last_left_distance_even += greatest_width + 100;
+        }
     }
 
     // ------------
 
+    let mut greatest_last_left_distance: u32 = if last_left_distance_uneven > last_left_distance_even
+        {last_left_distance_uneven - 50} else {last_left_distance_even - 50};
     let xy: XY = XY {
-        x: 1080,
-        y: top_line_second_half + 50,
+        x: greatest_last_left_distance,
+        y: top_line_second_half + greatest_height_second_half + 50,
     };
 
     let colors: Colors = Colors {
