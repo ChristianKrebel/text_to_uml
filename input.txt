@@ -4,11 +4,13 @@ private String name
 public static void main()
 public String name()
 
-Class:Klasse2
+Class:Klasse2 mit einem ganz langen Namen
 <<interface>>
 --
 public boolean fkt1()
 public int fkt2()
+public String fkt3()
+public int fkt4()
 
 Association
 Klasse1,Klasse2

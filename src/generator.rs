@@ -14,9 +14,20 @@ use rusttype::{point, Font, Scale};
 use std::vec::Vec;
 use std::fs::File;
 use std::path::Path;
+use std::ptr::null;
 use self::rand::Rng;
 
 use self::image::{DynamicImage, GenericImage, Pixel, Rgba, RgbaImage, ImageFormat};
+
+struct FullClass {
+    class: Class,
+    lt: XY,
+    rt: XY,
+    lb: XY,
+    rb: XY,
+    height: u32,
+    width: u32
+}
 
 struct Colors {
     white: image::Rgba<u8>,
@@ -39,14 +50,105 @@ pub struct General {
     scales : Scales,
 }
 
+const LINE_HEIGHT: u32 = 30;
+const LETTER_WIDTH: u32 = 11;
 
 pub fn generate_pic(class_vec: &mut Vec<Class>, rel_vec: &mut Vec<Relation>) {
 
     let path = Path::new("output.png");
 
+    // ------ Layouting all classes ------
+    let mut full_class_vec: Vec<FullClass> = Vec::new();
+    let mut class_count = class_vec.len();
+
+    // calc heights for upper half of classes (uneven)
+    let mut greatest_height_first_half: u32 = 0;
+    for (i,c) in class_vec.iter().enumerate() {
+        let mut greatest_height: u32 = 0;
+        if i % 2 != 0 {
+            if !c.class_name.is_empty() {
+                greatest_height += 1;
+            }
+            if !c.class_stereotype.is_empty() {
+                greatest_height += 1;
+            }
+            greatest_height += c.content_lines.len() as u32;
+        }
+        if greatest_height > greatest_height_first_half {
+            greatest_height_first_half = greatest_height;
+        }
+    }
+
+    // calc heights for lower half of classes (even)
+    let mut greatest_height_second_half: u32 = 0;
+    for (i,c) in class_vec.iter().enumerate() {
+        let mut greatest_height: u32 = 0;
+        if i % 2 == 0 {
+            if !c.class_name.is_empty() {
+                greatest_height += 1;
+            }
+            if !c.class_stereotype.is_empty() {
+                greatest_height += 1;
+            }
+            greatest_height += c.content_lines.len() as u32;
+        }
+        if greatest_height > greatest_height_second_half {
+            greatest_height_second_half = greatest_height;
+        }
+    }
+
+    greatest_height_first_half *= LINE_HEIGHT;
+    greatest_height_second_half *= LINE_HEIGHT;
+    let mut base_line_first_half: u32 = greatest_height_first_half + 50;
+    let mut top_line_second_half: u32 = base_line_first_half + 300;
+
+    /*println!("{}", greatest_height_first_half);
+    println!("{}", greatest_height_second_half);*/
+
+    let mut last_left_distance_uneven: u32 = 50;
+    let mut last_left_distance_even: u32 = 50;
+    for (i,c) in class_vec.iter().enumerate() {
+        let mut greatest_width: u32 = 0;
+        for line in c.content_lines {
+            if line.len() as u32 > greatest_width {
+                greatest_width = line.len() as u32;
+            }
+        }
+        greatest_width *= LETTER_WIDTH;
+
+        let mut height: u32 = 0;
+        if i % 2 != 0 {
+            if !c.class_name.is_empty() {
+                height += 1;
+            }
+            if !c.class_stereotype.is_empty() {
+                height += 1;
+            }
+            height += c.content_lines.len() as u32;
+        }
+        height *= LINE_HEIGHT;
+
+        if i % 2 != 0 {
+            lb = last_left_distance_uneven;
+        } else {
+            lb = last_left_distance_even;
+        }
+        /*let full_class: Full_class = Full_class {
+            class: c,
+            lt: ,
+            rt: ,
+            lb: ,
+            rb: ,
+            height: height,
+            width: greatest_width
+        };*/
+    }
+
+    // ------------
+
     let xy: XY = XY {
         x: 1080,
-        y: 1080,
+        y: top_line_second_half + 50,
     };
 
     let colors: Colors = Colors {
@@ -87,11 +189,13 @@ pub fn generate_pic(class_vec: &mut Vec<Class>, rel_vec: &mut Vec<Relation>) {
     let mut i:i32 = 0;
     let mut e:i32= 0;
     let mut add_to_i: i32 = 0;
-    // ------ DRAW -------
+
+    // ------ DRAW ------
     for c in class_vec.iter() {
         add_to_i = draw_class(&mut imgbuf, &general, &font, &c, i, e);
         i += add_to_i + 50;
     }
+    // ------------
 
     imgbuf.save(&path).unwrap();
 
