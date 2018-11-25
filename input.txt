@@ -1,4 +1,7 @@
 Class:Klasse1
+<<abstract>>
+--
+public String name
 private String name
 --
 package static void main()
@@ -53,4 +56,12 @@ private String jap
 
 Association
 Klasse1,Klasse2
+1,n
+
+Association
+Klasse1,lol
+1,n
+
+Association
+Klasse1,WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW
 1,n

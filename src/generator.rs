@@ -31,6 +31,12 @@ pub struct ClassLayout {
     uneven: bool
 }
 
+pub struct RelationLayout {
+    rel: Relation,
+    start: XY,
+    end: XY
+}
+
 struct Colors {
     white: image::Rgba<u8>,
     black: image::Rgba<u8>,
@@ -57,6 +63,7 @@ const LETTER_WIDTH: u32 = 13;
 const RELATION_GAP: u32 = 400;
 const PADDING_LEFT: u32 = 4;
 const PADDING_TOP: u32 = 2;
+const RELATION_STICK: u32 = 50;
 
 pub fn generate_pic(class_vec: &mut Vec<Class>, rel_vec: &mut Vec<Relation>) {
 
@@ -164,6 +171,8 @@ pub fn generate_pic(class_vec: &mut Vec<Class>, rel_vec: &mut Vec<Relation>) {
         }
 
         let uneven: bool = if i % 2 != 0 {true} else {false};
+
+
         let class_layout: ClassLayout = ClassLayout {
             lt: lt,
             rt: rt,
@@ -171,7 +180,7 @@ pub fn generate_pic(class_vec: &mut Vec<Class>, rel_vec: &mut Vec<Relation>) {
             rb: rb,
             height: height,
             width: greatest_width,
-            uneven: uneven
+            uneven: uneven,
         };
         class_layout_vec.push(class_layout);
         if i % 2 != 0 {
@@ -181,6 +190,74 @@ pub fn generate_pic(class_vec: &mut Vec<Class>, rel_vec: &mut Vec<Relation>) {
         }
     }
 
+    // ------------
+
+    // ------ Layouting all relations ------
+    let mut rel_layout_vec: Vec<RelationLayout> = Vec::new();
+
+
+    for (i,c) in class_vec.iter().enumerate() {
+        println!("cname: {}", c.class_name);
+        let mut rels: Vec<Relation> = Vec::new();
+        let mut rel_starts: Vec<XY> = Vec::new();
+        let mut rel_starts_stepsize: u32;
+        let mut i = 0;
+        let mut rel_vec2 = rel_vec.clone();
+        for rel in rel_vec2.drain(..) {
+            if rel.from_class == c.class_name {
+                rels.push(rel);
+                println!("relnr: {}", i);
+                i += 1;
+            }
+        }
+        rel_starts_stepsize = class_layout_vec[i].width / (rels.len() as u32 + 1);
+        let mut x_start: u32 = 0;
+        let mut y_start: u32 = 0;
+        if class_layout_vec[i].uneven {
+            x_start = class_layout_vec[i].lb.x;
+            y_start = class_layout_vec[i].lb.y;
+        } else {
+            x_start = class_layout_vec[i].lt.x;
+            y_start = class_layout_vec[i].lt.y;
+        }
+        for rel in rels.drain(..) {
+            x_start += rel_starts_stepsize;
+            let mut xy1: XY = XY {
+                x: x_start,
+                y: y_start
+            };
+
+            let mut to_class_i: usize = 0;
+            for (ci, c) in class_vec.iter().enumerate() {
+                if c.class_name == rel.to_class {
+                    to_class_i = ci;
+                }
+            }
+            let mut x2_start: u32 = 0;
+            let mut y2_start: u32 = 0;
+            if class_layout_vec[to_class_i].uneven {
+                x2_start = class_layout_vec[to_class_i].lb.x;
+                y2_start = class_layout_vec[to_class_i].lb.y;
+            } else {
+                x2_start = class_layout_vec[to_class_i].lt.x;
+                y2_start = class_layout_vec[to_class_i].lt.y;
+            }
+
+            let mut xy2: XY = XY {
+                x: x2_start,
+                y: y2_start
+            };
+
+
+            let mut rl: RelationLayout = RelationLayout {
+                rel: rel,
+                start: xy1,
+                end: xy2
+            };
+
+            rel_layout_vec.push(rl);
+        }
+    }
     // ------------
 
     // Calc picture bounds
@@ -233,8 +310,11 @@ pub fn generate_pic(class_vec: &mut Vec<Class>, rel_vec: &mut Vec<Relation>) {
         draw_class(&mut imgbuf, &general, &font, &c, &class_layout_vec[i]);
     }
 
-    for (i, r) in rel_vec.iter().enumerate() {
-        draw_rel();
+    println!("vec länge: {}", rel_layout_vec.len());
+    println!("--- x:{}, y:{},  x:{}, y:{}", rel_layout_vec[0].start.x, rel_layout_vec[0].start.y, rel_layout_vec[0].end.x, rel_layout_vec[0].end.y);
+    for (i, r) in rel_layout_vec.iter().enumerate() {
+        println!("{}", i);
+        draw_rel(&mut imgbuf, &general, &font, &r);
     }
     // ------------
 
@@ -371,6 +451,12 @@ pub fn draw_class(buffer: &mut image::RgbaImage, general: &General, font: &Font,
     }
 }
 
-pub fn draw_rel() {
-    // TODO
+pub fn draw_rel(buffer: &mut image::RgbaImage, general: &General, font: &Font, relation_layout: &RelationLayout) {
+    println!("from: {}, from card: {}", relation_layout.rel.from_class, relation_layout.rel.from_class_card);
+    println!("to: {}, to card: {}", relation_layout.rel.to_class, relation_layout.rel.to_class_card);
+    draw_line_segment_mut(buffer,
+                          (relation_layout.start.x as f32, relation_layout.start.y as f32),
+                          (relation_layout.end.x as f32, relation_layout.end.y as f32),
+                          general.colors.black);
+
 }
