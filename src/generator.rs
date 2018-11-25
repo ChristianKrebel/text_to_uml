@@ -53,8 +53,10 @@ pub struct General {
 }
 
 const LINE_HEIGHT: u32 = 30;
-const LETTER_WIDTH: u32 = 11;
+const LETTER_WIDTH: u32 = 13;
 const RELATION_GAP: u32 = 400;
+const PADDING_LEFT: u32 = 4;
+const PADDING_TOP: u32 = 2;
 
 pub fn generate_pic(class_vec: &mut Vec<Class>, rel_vec: &mut Vec<Relation>) {
 
@@ -103,7 +105,8 @@ pub fn generate_pic(class_vec: &mut Vec<Class>, rel_vec: &mut Vec<Relation>) {
     greatest_height_first_half *= LINE_HEIGHT;
     greatest_height_second_half *= LINE_HEIGHT;
     let mut base_line_first_half: u32 = greatest_height_first_half + 50;
-    let mut top_line_second_half: u32 = base_line_first_half + RELATION_GAP;
+    let mut top_line_second_half: u32 = if class_count == 1
+        {base_line_first_half} else {base_line_first_half + RELATION_GAP};
 
     /*println!("{}", greatest_height_first_half);
     println!("{}", greatest_height_second_half);*/
@@ -118,6 +121,16 @@ pub fn generate_pic(class_vec: &mut Vec<Class>, rel_vec: &mut Vec<Relation>) {
         for line in c.content_lines.iter() {
             if line.len() as u32 > greatest_width {
                 greatest_width = line.len() as u32;
+            }
+        }
+        if !c.class_name.is_empty() {
+            if c.class_name.len() as u32 > greatest_width {
+                greatest_width = c.class_name.len() as u32;
+            }
+        }
+        if !c.class_stereotype.is_empty() {
+            if c.class_stereotype.len() as u32 > greatest_width {
+                greatest_width = c.class_stereotype.len() as u32;
             }
         }
         greatest_width *= LETTER_WIDTH;
@@ -219,6 +232,10 @@ pub fn generate_pic(class_vec: &mut Vec<Class>, rel_vec: &mut Vec<Relation>) {
     for (i, c) in class_vec.iter().enumerate() {
         draw_class(&mut imgbuf, &general, &font, &c, &class_layout_vec[i]);
     }
+
+    for (i, r) in rel_vec.iter().enumerate() {
+        draw_rel();
+    }
     // ------------
 
     // Save the picture
@@ -252,7 +269,8 @@ pub fn generate_pic(class_vec: &mut Vec<Class>, rel_vec: &mut Vec<Relation>) {
 
 }
 
-pub fn draw_class(buffer: &mut image::RgbaImage, general: &General, font: &Font, class: &Class, class_layout: &ClassLayout) {
+pub fn draw_class(buffer: &mut image::RgbaImage, general: &General, font: &Font, class: &Class,
+                  class_layout: &ClassLayout) {
 
     //let &buffer = &general.buffer;
     let x = general.imgxy.x;
@@ -264,45 +282,95 @@ pub fn draw_class(buffer: &mut image::RgbaImage, general: &General, font: &Font,
     match class.class_type {
         ClassType::SimpleClass => {
             println!("width: {}, height: {}", &class_layout.width, &class_layout.height);
+
+            // Outer borderline
             draw_hollow_rect_mut(
-                buffer, imageproc::rect::Rect::at(class_layout.lt.x as i32, class_layout.lt.y as i32).of_size(class_layout.width, class_layout.height),
+                buffer, imageproc::rect::Rect::at(
+                    class_layout.lt.x as i32, class_layout.lt.y as i32).of_size(
+                    class_layout.width, class_layout.height),
                 colors.black);
 
-            /*
-            draw_hollow_rect_mut(
-                buffer, imageproc::rect::Rect::at(i, e).of_size(209, 30),
-                colors.black);
-            draw_hollow_rect_mut(
-                buffer, imageproc::rect::Rect::at(i, e).of_size(209, 60),
-                colors.black);                              // height +30, width = längste Stringlänge * 11
-            draw_hollow_rect_mut(
-                buffer, imageproc::rect::Rect::at(i, e).of_size(209, 90),
-                colors.black);
-            let mut j = i as u32 + 5;
-            let mut k:u32 = 0;
-            let mut name_length = class.class_name.len() as u32;
-            draw_text_mut(
-                buffer, colors.black, j + 5, k, scales.one, &font, &class.class_name); // y + 30
-            for line in class.content_lines.iter() {
-                k += 30;
+            let mut height_to_write_at: u32 = class_layout.lt.y + PADDING_TOP;
+            let mut has_stereotype: bool = if class.class_stereotype.is_empty() { false } else { true };
+
+            // Draw name (and stereotype)
+            if has_stereotype {
                 draw_text_mut(
-                    buffer, colors.black, j, k, scales.two, &font, &line);
-            }*/
+                    buffer, colors.black, class_layout.lt.x + PADDING_LEFT,
+                    height_to_write_at, scales.two, &font, &class.class_stereotype);
+                height_to_write_at += LINE_HEIGHT;
+                draw_text_mut(
+                    buffer, colors.black, class_layout.lt.x + PADDING_LEFT,
+                    height_to_write_at, scales.two, &font, &class.class_name);
+                height_to_write_at += LINE_HEIGHT;
+            } else {
+                draw_text_mut(
+                    buffer, colors.black, class_layout.lt.x + PADDING_LEFT,
+                    height_to_write_at, scales.two, &font, &class.class_name);
+                height_to_write_at += LINE_HEIGHT;
+            }
+
+            // Draw all other lines of text or just lines
+            for (i, line) in class.content_lines.iter().enumerate() {
+                let mut is_horizontal_line: bool = false;
+                match class.content_decor[i] {
+                    TextDecoration::None => {
+                        println!("Textdeco: None");
+                    }
+                    TextDecoration::HorizontalLine => {
+                        println!("Textdeco: HorizontalLine");
+                        is_horizontal_line = true;
+                    }
+                    TextDecoration::Bold => {
+                        println!("Textdeco: Bold");
+                        // TODO
+                    }
+                    TextDecoration::Italic => {
+                        println!("Textdeco: Italic");
+                        // TODO
+                    }
+                    TextDecoration::BoldItalic => {
+                        println!("Textdeco: BoldItalic");
+                        // TODO
+                    }
+                    TextDecoration::Underlined => {
+                        println!("Textdeco: Underlined");
+                        // TODO
+                    }
+                }
+                if is_horizontal_line || line.is_empty() || line == "-" {
+                    draw_hollow_rect_mut(
+                        buffer, imageproc::rect::Rect::at(
+                            class_layout.lt.x as i32, class_layout.lt.y as i32).of_size(
+                            class_layout.width,
+                            height_to_write_at - class_layout.lt.y + (LINE_HEIGHT / 2)),
+                        colors.black);
+                } else {
+                    draw_text_mut(
+                        buffer, colors.black, class_layout.lt.x + PADDING_LEFT,
+                        height_to_write_at, scales.two, &font, &line);
+                }
+                height_to_write_at += LINE_HEIGHT;
+            }
         }
         ClassType::AbstractClass => {
-
+            // TODO
         }
         ClassType::ActiveClass => {
-
+            // TODO
         }
         ClassType::DashedBorderClass => {
-
+            // TODO
         }
         ClassType::VarBorderClass => {
-
+            // TODO
         }
         ClassType::None => {
-
+            // TODO
         }
     }
+}
+
+pub fn draw_rel() {
+    // TODO
 }

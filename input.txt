@@ -1,22 +1,55 @@
 Class:Klasse1
 private String name
 --
-public static void main()
+package static void main()
 public String name()
 
-Class:Klasse2 mit einem ganz langen Namen
+Class:Klasse2
 <<interface>>
 --
 public boolean fkt1()
 public int fkt2()
 public String fkt3sssdasdasd()
+package int fkt4()
 public int fkt4()
 public int fkt4()
 public int fkt4()
 public int fkt4()
 public int fkt4()
 public int fkt4()
+
+Class:WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW
+<<abstract>>
+--
+public boolean fkt1()
+public int fkt2()
+public String fkt3sssdasdasdsdasdasdasdassadasdasdasd()
 public int fkt4()
+public int fkt4()
+public int fkt4()
+
+Class:lol
+--
+public a
+public a
+public a
+public a
+public a
+public a
+--
+public a
+--
+public a
+--
+--
+test
+--
+la
+
+Class:Test
+--
+private String jap
+--
 
 Association
 Klasse1,Klasse2
