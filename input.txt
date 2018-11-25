@@ -9,7 +9,13 @@ Class:Klasse2 mit einem ganz langen Namen
 --
 public boolean fkt1()
 public int fkt2()
-public String fkt3()
+public String fkt3sssdasdasd()
+public int fkt4()
+public int fkt4()
+public int fkt4()
+public int fkt4()
+public int fkt4()
+public int fkt4()
 public int fkt4()
 
 Association

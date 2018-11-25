@@ -15,17 +15,20 @@ use std::vec::Vec;
 use std::fs::File;
 use std::path::Path;
 use std::ptr::null;
+use std::str::*;
+use std::string::*;
 use self::rand::Rng;
 
 use self::image::{DynamicImage, GenericImage, Pixel, Rgba, RgbaImage, ImageFormat};
 
-struct ClassLayout {
+pub struct ClassLayout {
     lt: XY,
     rt: XY,
     lb: XY,
     rb: XY,
     height: u32,
-    width: u32
+    width: u32,
+    uneven: bool
 }
 
 struct Colors {
@@ -51,6 +54,7 @@ pub struct General {
 
 const LINE_HEIGHT: u32 = 30;
 const LETTER_WIDTH: u32 = 11;
+const RELATION_GAP: u32 = 400;
 
 pub fn generate_pic(class_vec: &mut Vec<Class>, rel_vec: &mut Vec<Relation>) {
 
@@ -99,7 +103,7 @@ pub fn generate_pic(class_vec: &mut Vec<Class>, rel_vec: &mut Vec<Relation>) {
     greatest_height_first_half *= LINE_HEIGHT;
     greatest_height_second_half *= LINE_HEIGHT;
     let mut base_line_first_half: u32 = greatest_height_first_half + 50;
-    let mut top_line_second_half: u32 = base_line_first_half + 300;
+    let mut top_line_second_half: u32 = base_line_first_half + RELATION_GAP;
 
     /*println!("{}", greatest_height_first_half);
     println!("{}", greatest_height_second_half);*/
@@ -108,6 +112,8 @@ pub fn generate_pic(class_vec: &mut Vec<Class>, rel_vec: &mut Vec<Relation>) {
     let mut last_left_distance_even: u32 = 50;
 
     for (i,c) in class_vec.iter().enumerate() {
+        println!("LLDU: {}", last_left_distance_uneven);
+        println!("LLDE: {}", last_left_distance_even);
         let mut greatest_width: u32 = 0;
         for line in c.content_lines.iter() {
             if line.len() as u32 > greatest_width {
@@ -117,7 +123,7 @@ pub fn generate_pic(class_vec: &mut Vec<Class>, rel_vec: &mut Vec<Relation>) {
         greatest_width *= LETTER_WIDTH;
 
         let mut height: u32 = 0;
-        if i % 2 != 0 {
+
             if !c.class_name.is_empty() {
                 height += 1;
             }
@@ -125,7 +131,7 @@ pub fn generate_pic(class_vec: &mut Vec<Class>, rel_vec: &mut Vec<Relation>) {
                 height += 1;
             }
             height += c.content_lines.len() as u32;
-        }
+
         height *= LINE_HEIGHT;
 
         let mut lb: XY = XY {x: 0, y: 0};
@@ -134,34 +140,37 @@ pub fn generate_pic(class_vec: &mut Vec<Class>, rel_vec: &mut Vec<Relation>) {
         let mut rt: XY = XY {x: 0, y: 0};
         if i % 2 != 0 {
             lb = XY {x: last_left_distance_uneven, y: base_line_first_half};
-            rb = XY {x: lb.x + greatest_width, y: lb.y};
-            lt = XY {x: lb.x, y: lb.y - height};
+            rb = XY {x: &lb.x + &greatest_width, y: lb.y};
+            lt = XY {x: lb.x, y: &lb.y - &height};
             rt = XY {x: rb.x, y: lt.y};
         } else {
             lt = XY {x: last_left_distance_even, y: top_line_second_half};
-            rt = XY {x: lt.x + greatest_width, y: lt.y};
-            lb = XY {x: lt.x, y: lt.y + height};
-            rb = XY {x: rt.x, y: lb.y}
+            rt = XY {x: &lt.x + &greatest_width, y: lt.y};
+            lb = XY {x: lt.x, y: &lt.y + &height};
+            rb = XY {x: rt.x, y: lb.y};
         }
 
+        let uneven: bool = if i % 2 != 0 {true} else {false};
         let class_layout: ClassLayout = ClassLayout {
             lt: lt,
             rt: rt,
             lb: lb,
             rb: rb,
             height: height,
-            width: greatest_width
+            width: greatest_width,
+            uneven: uneven
         };
         class_layout_vec.push(class_layout);
-        if i & 2 != 0 {
-            last_left_distance_uneven += greatest_width + 100;
+        if i % 2 != 0 {
+            last_left_distance_uneven += &greatest_width + 100;
         } else {
-            last_left_distance_even += greatest_width + 100;
+            last_left_distance_even += &greatest_width + 100;
         }
     }
 
     // ------------
 
+    // Calc picture bounds
     let mut greatest_last_left_distance: u32 = if last_left_distance_uneven > last_left_distance_even
         {last_left_distance_uneven - 50} else {last_left_distance_even - 50};
     let xy: XY = XY {
@@ -169,6 +178,7 @@ pub fn generate_pic(class_vec: &mut Vec<Class>, rel_vec: &mut Vec<Relation>) {
         y: top_line_second_half + greatest_height_second_half + 50,
     };
 
+    // Colors
     let colors: Colors = Colors {
         white: Rgba([255u8, 255u8, 255u8, 255u8]),
         black: Rgba([0u8, 0u8, 0u8, 255u8]),
@@ -190,9 +200,8 @@ pub fn generate_pic(class_vec: &mut Vec<Class>, rel_vec: &mut Vec<Relation>) {
 
     // Create a new ImgBuf with width: imgx and height: imgy
     let mut imgbuf = image::RgbaImage::new(xy.x, xy.y);
-    //let mut img = RgbaImage::new(imgx, imgy);
-    //let mut img = image::open(path).unwrap();
 
+    // Most important general info
     let general: General = General {
         buffer: image::RgbaImage::new(xy.x, xy.y),
         imgxy: xy,
@@ -200,21 +209,19 @@ pub fn generate_pic(class_vec: &mut Vec<Class>, rel_vec: &mut Vec<Relation>) {
         scales: scales,
     };
 
+    // Draw background
     draw_filled_rect_mut(
         &mut imgbuf, imageproc::rect::Rect::at(0, 0).of_size(general.imgxy.x, general.imgxy.y),
         general.colors.white);
 
-    let mut i:i32 = 0;
-    let mut e:i32= 0;
-    let mut add_to_i: i32 = 0;
 
     // ------ DRAW ------
-    for c in class_vec.iter() {
-        add_to_i = draw_class(&mut imgbuf, &general, &font, &c, i, e);
-        i += add_to_i + 50;
+    for (i, c) in class_vec.iter().enumerate() {
+        draw_class(&mut imgbuf, &general, &font, &c, &class_layout_vec[i]);
     }
     // ------------
 
+    // Save the picture
     imgbuf.save(&path).unwrap();
 
 
@@ -245,7 +252,7 @@ pub fn generate_pic(class_vec: &mut Vec<Class>, rel_vec: &mut Vec<Relation>) {
 
 }
 
-pub fn draw_class(buffer: &mut image::RgbaImage, general: &General, font: &Font, class: &Class, i:i32, e:i32) -> i32 {
+pub fn draw_class(buffer: &mut image::RgbaImage, general: &General, font: &Font, class: &Class, class_layout: &ClassLayout) {
 
     //let &buffer = &general.buffer;
     let x = general.imgxy.x;
@@ -253,25 +260,15 @@ pub fn draw_class(buffer: &mut image::RgbaImage, general: &General, font: &Font,
     let colors = &general.colors;
     let scales = &general.scales;
 
-    let mut width = 0;
-    for line in class.content_lines.iter() {
-        if line.len() > width {
-            width = line.len();
-        }
-    }
-    if class.class_name.len() > width {
-        width = class.class_name.len();
-    }
-    width *= 11;
-    let mut lt = x;
-    let mut rt = x + width as u32;
-    let mut lb: u32;
-    let mut rb: u32;
-
-
 
     match class.class_type {
         ClassType::SimpleClass => {
+            println!("width: {}, height: {}", &class_layout.width, &class_layout.height);
+            draw_hollow_rect_mut(
+                buffer, imageproc::rect::Rect::at(class_layout.lt.x as i32, class_layout.lt.y as i32).of_size(class_layout.width, class_layout.height),
+                colors.black);
+
+            /*
             draw_hollow_rect_mut(
                 buffer, imageproc::rect::Rect::at(i, e).of_size(209, 30),
                 colors.black);
@@ -290,7 +287,7 @@ pub fn draw_class(buffer: &mut image::RgbaImage, general: &General, font: &Font,
                 k += 30;
                 draw_text_mut(
                     buffer, colors.black, j, k, scales.two, &font, &line);
-            }
+            }*/
         }
         ClassType::AbstractClass => {
 
@@ -308,5 +305,4 @@ pub fn draw_class(buffer: &mut image::RgbaImage, general: &General, font: &Font,
 
         }
     }
-    return width as i32;
 }
