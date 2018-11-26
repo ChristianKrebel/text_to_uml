@@ -17,6 +17,7 @@ use std::path::Path;
 use std::ptr::null;
 use std::str::*;
 use std::string::*;
+use std::mem;
 use self::rand::Rng;
 
 use self::image::{DynamicImage, GenericImage, Pixel, Rgba, RgbaImage, ImageFormat};
@@ -194,23 +195,35 @@ pub fn generate_pic(class_vec: &mut Vec<Class>, rel_vec: &mut Vec<Relation>) {
 
     // ------ Layouting all relations ------
     let mut rel_layout_vec: Vec<RelationLayout> = Vec::new();
+    //rel_vec.sort_by_key(|x| x.from_class);
+    println!("{:?}", rel_vec);
 
 
     for (i,c) in class_vec.iter().enumerate() {
         println!("cname: {}", c.class_name);
-        let mut rels: Vec<Relation> = Vec::new();
         let mut rel_starts: Vec<XY> = Vec::new();
         let mut rel_starts_stepsize: u32;
-        let mut i = 0;
-        let mut rel_vec2 = rel_vec.clone();
-        for rel in rel_vec2.drain(..) {
+        let mut rels_ids: Vec<u32> = Vec::new();
+        let mut i_rel = 0;
+        for (id, rel) in rel_vec.iter().enumerate() {
             if rel.from_class == c.class_name {
-                rels.push(rel);
-                println!("relnr: {}", i);
-                i += 1;
+                println!("relnr: {}", i_rel);
+                i_rel += 1;
+                rels_ids.push(id as u32);
             }
         }
-        rel_starts_stepsize = class_layout_vec[i].width / (rels.len() as u32 + 1);
+        let mut rels: Vec<Relation> = Vec::new();
+        for i in 0..i_rel {
+            rels.push(Relation {
+                border_type: BorderType::None,
+                arrow_type: RelationArrow::None,
+                from_class: "".to_string(),
+                from_class_card: "".to_string(),
+                to_class: "".to_string(),
+                to_class_card: "".to_string()
+            });
+        }
+        rel_starts_stepsize = class_layout_vec[i].width / (i_rel as u32 + 1);
         let mut x_start: u32 = 0;
         let mut y_start: u32 = 0;
         if class_layout_vec[i].uneven {
@@ -220,7 +233,19 @@ pub fn generate_pic(class_vec: &mut Vec<Class>, rel_vec: &mut Vec<Relation>) {
             x_start = class_layout_vec[i].lt.x;
             y_start = class_layout_vec[i].lt.y;
         }
-        for rel in rels.drain(..) {
+        let mut counter: u32 = 0;
+        for var in 0..i_rel {
+
+            let mut real_rel = &rel_vec[(rels_ids[counter as usize]) as usize];
+            let mut rel = Relation {
+                border_type: real_rel.border_type,
+                arrow_type: real_rel.arrow_type,
+                from_class: real_rel.from_class,
+                from_class_card: real_rel.from_class_card,
+                to_class: real_rel.to_class,
+                to_class_card: real_rel.to_class_card
+            };
+
             x_start += rel_starts_stepsize;
             let mut xy1: XY = XY {
                 x: x_start,
@@ -229,7 +254,7 @@ pub fn generate_pic(class_vec: &mut Vec<Class>, rel_vec: &mut Vec<Relation>) {
 
             let mut to_class_i: usize = 0;
             for (ci, c) in class_vec.iter().enumerate() {
-                if c.class_name == rel.to_class {
+                if c.class_name == real_rel.to_class {
                     to_class_i = ci;
                 }
             }
@@ -256,6 +281,7 @@ pub fn generate_pic(class_vec: &mut Vec<Class>, rel_vec: &mut Vec<Relation>) {
             };
 
             rel_layout_vec.push(rl);
+            counter += 1;
         }
     }
     // ------------
@@ -347,6 +373,17 @@ pub fn generate_pic(class_vec: &mut Vec<Class>, rel_vec: &mut Vec<Relation>) {
     //imgbuf.save("test.png").unwrap();
     //img.save(&mut File::create(&Path::new("output.png")).unwrap(), image::PNG);
 
+}
+
+pub fn get_empty_relation() -> Relation {
+    Relation {
+        border_type: BorderType::None,
+        arrow_type: RelationArrow::None,
+        from_class: "".to_string(),
+        from_class_card: "".to_string(),
+        to_class: "".to_string(),
+        to_class_card: "".to_string()
+    }
 }
 
 pub fn draw_class(buffer: &mut image::RgbaImage, general: &General, font: &Font, class: &Class,
