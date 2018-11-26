@@ -191,11 +191,13 @@ fn parse_lines(lines: &mut Vec<String>, classes: &mut Vec<Class>, relations: &mu
                 break;
             }
 
-            line_stereo.pop();
+            //let mut line_stereo_before = String::from(line_stereo)
+            //line_stereo.pop();
 
             let mut class_stereotype: String;
 
-            if line_stereo.starts_with("<<") && line_stereo.ends_with(">>") {
+            if line_stereo.starts_with("<<") && line_stereo.ends_with(">>\r") {
+                line_stereo.pop();
                 class_stereotype = line_stereo;
             }else{
                 class_stereotype = String::from("");
@@ -253,10 +255,6 @@ fn parse_lines(lines: &mut Vec<String>, classes: &mut Vec<Class>, relations: &mu
 
                 line_inner = line_inner.chars().skip(skip).take(line_inner.len()-skip).collect();
 
-                /*println!("left of line after first cut: {}", line_inner);
-                println!("classType: {:?}", class_type);
-                println!("className: {}", class_name);
-                println!("field visibility: {:?}", field_visibility);*/
 
                 if line_inner.starts_with("static "){
                     skip = 7;
@@ -264,6 +262,19 @@ fn parse_lines(lines: &mut Vec<String>, classes: &mut Vec<Class>, relations: &mu
 
                     line_inner = line_inner.chars().skip(skip).take(line_inner.len()-skip).collect();
                 }
+
+                let mut split = line_inner.split(" ");
+                let all_in_line: Vec<&str> = split.collect();
+
+                let mut line_left = String::new();
+
+                if all_in_line.len() > 1{
+                    let strEnd: String = all_in_line.get(0).unwrap().to_string();
+                    let mut strStart: String = line_inner.chars().skip(strEnd.len()+1).take(line_inner.len()-(strEnd.len()+1)).collect();
+                    line_left = strStart + ": " + &strEnd;
+                }
+
+
 
                 let mut vis_string: String = String::new();
 
@@ -277,7 +288,7 @@ fn parse_lines(lines: &mut Vec<String>, classes: &mut Vec<Class>, relations: &mu
                     vis_string = String::from("- ");
                 }
 
-                let mut total: String = vis_string + &line_inner;
+                let mut total: String = vis_string + &line_left;
 
                 let mut field_decor: TextDecoration = TextDecoration::None;
 
