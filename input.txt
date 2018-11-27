@@ -55,6 +55,10 @@ private String jap
 --
 
 Association
+Klasse2,Klasse1
+n,n
+
+Association
 Klasse1,Klasse2
 1,n
 
@@ -64,4 +68,4 @@ Klasse1,lol
 
 Association
 Klasse1,WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW
-1,n
+n,n
