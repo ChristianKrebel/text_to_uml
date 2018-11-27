@@ -77,7 +77,7 @@ fn parse_lines(lines: &mut Vec<String>, classes: &mut Vec<Class>, relations: &mu
                 arrow_type = RelationArrow::DiamondFilled;
                 relation_border = BorderType::Solid;
             }else{
-                println!("No RelationType fitting found.");
+                println!("No RelationType fitting found. '{}'", relation_string);
             }
 
             //println!("Value of relation_type: {:?}", relation_type);
@@ -122,6 +122,8 @@ fn parse_lines(lines: &mut Vec<String>, classes: &mut Vec<Class>, relations: &mu
             let mut opt_cards_str = opt_cards.unwrap();
             opt_cards_str.pop();
 
+            //println!("opt_cards_str: '{}'", opt_cards_str);
+
             if opt_cards_str.is_empty() {
                 println!("Error in relation syntax: Missing lines following class type definition");
                 break;
@@ -143,6 +145,22 @@ fn parse_lines(lines: &mut Vec<String>, classes: &mut Vec<Class>, relations: &mu
             println!("Full struct for relation: {:?}", relation);
 
             relations.push(relation);
+
+
+            let mut opt_empty_line = lines.pop();
+
+            if !opt_empty_line.is_some() {
+                continue;
+            }
+
+            let mut empty_line_str = opt_empty_line.unwrap();
+            empty_line_str.pop();
+
+            //println!("empty_line: '{}'", empty_line_str);
+
+            if opt_cards_str.is_empty() {
+                continue;
+            }
 
         }else{
             //Case: The header line was a class
