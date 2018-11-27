@@ -65,6 +65,7 @@ const RELATION_GAP: u32 = 400;
 const PADDING_LEFT: u32 = 4;
 const PADDING_TOP: u32 = 2;
 const RELATION_STICK: u32 = RELATION_GAP / 8;
+const DASHED_LENGTH: u32 = 10;
 
 pub fn generate_pic(class_vec: &mut Vec<Class>, rel_vec: &mut Vec<Relation>) {
     println!("{:?}", rel_vec);
@@ -211,10 +212,25 @@ pub fn generate_pic(class_vec: &mut Vec<Class>, rel_vec: &mut Vec<Relation>) {
         blue: Rgba([0u8, 0u8, 255u8, 127u8]),
     };
 
+    // Fonts
+    let mut font_vec: Vec<Font> = Vec::new();
+
     // Load the font
     let font_data = include_bytes!("../fonts/Roboto-Regular.ttf");
     // This only succeeds if collection consists of one font
-    let font = Font::from_bytes(font_data as &[u8]).expect("Error constructing Font");
+    font_vec.push(Font::from_bytes(font_data as &[u8]).expect("Error constructing Font"));
+    // Load the font
+    let font_data2 = include_bytes!("../fonts/Roboto-Italic.ttf");
+    // This only succeeds if collection consists of one font
+    font_vec.push(Font::from_bytes(font_data2 as &[u8]).expect("Error constructing Font"));
+    // Load the font
+    let font_data3 = include_bytes!("../fonts/Roboto-Bold.ttf");
+    // This only succeeds if collection consists of one font
+    font_vec.push(Font::from_bytes(font_data3 as &[u8]).expect("Error constructing Font"));
+    // Load the font
+    let font_data4 = include_bytes!("../fonts/Roboto-BoldItalic.ttf");
+    // This only succeeds if collection consists of one font
+    font_vec.push(Font::from_bytes(font_data4 as &[u8]).expect("Error constructing Font"));
 
     // The font size to use
     let scales: Scales = Scales {
@@ -242,7 +258,7 @@ pub fn generate_pic(class_vec: &mut Vec<Class>, rel_vec: &mut Vec<Relation>) {
 
     // ------ DRAW ------
     for (i, c) in class_vec.iter().enumerate() {
-        draw_class(&mut imgbuf, &general, &font, &c, &class_layout_vec[i]);
+        draw_class(&mut imgbuf, &general, &font_vec, &c, &class_layout_vec[i]);
     }
 
     // ------ Layouting all relations ------
@@ -324,7 +340,7 @@ pub fn generate_pic(class_vec: &mut Vec<Class>, rel_vec: &mut Vec<Relation>) {
                         end: xy2
                     };*/
 
-                    draw_rel(&mut imgbuf, &general, &font, &rel, &xy1, &xy2, base_line_first_half);
+                    draw_rel(&mut imgbuf, &general, &font_vec, &rel, &xy1, &xy2, base_line_first_half);
                 }
             }
         }
@@ -380,7 +396,7 @@ pub fn get_empty_relation() -> Relation {
     }
 }
 
-pub fn draw_class(buffer: &mut image::RgbaImage, general: &General, font: &Font, class: &Class,
+pub fn draw_class(buffer: &mut image::RgbaImage, general: &General, fonts: &Vec<Font>, class: &Class,
                   class_layout: &ClassLayout) {
 
     //let &buffer = &general.buffer;
@@ -406,22 +422,30 @@ pub fn draw_class(buffer: &mut image::RgbaImage, general: &General, font: &Font,
 
             // Draw name (and stereotype)
             if has_stereotype {
-                draw_text_mut(
-                    buffer, colors.black, class_layout.lt.x + PADDING_LEFT,
-                    height_to_write_at, scales.two, &font, &class.class_stereotype);
-                height_to_write_at += LINE_HEIGHT;
-                draw_text_mut(
-                    buffer, colors.black, class_layout.lt.x + PADDING_LEFT,
-                    height_to_write_at, scales.two, &font, &class.class_name);
-                height_to_write_at += LINE_HEIGHT;
+                if class.class_stereotype == "<<abstract>>" {
+                    draw_text_mut(
+                        buffer, colors.black, class_layout.lt.x + PADDING_LEFT,
+                        height_to_write_at, scales.two, &fonts[1], &class.class_name);
+                    height_to_write_at += LINE_HEIGHT;
+                } else {
+                    draw_text_mut(
+                        buffer, colors.black, class_layout.lt.x + PADDING_LEFT,
+                        height_to_write_at, scales.two, &fonts[0], &class.class_stereotype);
+                    height_to_write_at += LINE_HEIGHT;
+                    draw_text_mut(
+                        buffer, colors.black, class_layout.lt.x + PADDING_LEFT,
+                        height_to_write_at, scales.two, &fonts[0], &class.class_name);
+                    height_to_write_at += LINE_HEIGHT;
+                }
             } else {
                 draw_text_mut(
                     buffer, colors.black, class_layout.lt.x + PADDING_LEFT,
-                    height_to_write_at, scales.two, &font, &class.class_name);
+                    height_to_write_at, scales.two, &fonts[0], &class.class_name);
                 height_to_write_at += LINE_HEIGHT;
             }
 
             // Draw all other lines of text or just lines
+            let mut deco_font: u32 = 0;
             for (i, line) in class.content_lines.iter().enumerate() {
                 let mut is_horizontal_line: bool = false;
                 match class.content_decor[i] {
@@ -434,15 +458,15 @@ pub fn draw_class(buffer: &mut image::RgbaImage, general: &General, font: &Font,
                     }
                     TextDecoration::Bold => {
                         println!("Textdeco: Bold");
-                        // TODO
+                        deco_font = 2;
                     }
                     TextDecoration::Italic => {
                         println!("Textdeco: Italic");
-                        // TODO
+                        deco_font = 1;
                     }
                     TextDecoration::BoldItalic => {
                         println!("Textdeco: BoldItalic");
-                        // TODO
+                        deco_font = 3;
                     }
                     TextDecoration::Underlined => {
                         println!("Textdeco: Underlined");
@@ -459,7 +483,7 @@ pub fn draw_class(buffer: &mut image::RgbaImage, general: &General, font: &Font,
                 } else {
                     draw_text_mut(
                         buffer, colors.black, class_layout.lt.x + PADDING_LEFT,
-                        height_to_write_at, scales.two, &font, &line);
+                        height_to_write_at, scales.two, &fonts[deco_font as usize], &line);
                 }
                 height_to_write_at += LINE_HEIGHT;
             }
@@ -482,18 +506,85 @@ pub fn draw_class(buffer: &mut image::RgbaImage, general: &General, font: &Font,
     }
 }
 
-pub fn draw_rel(buffer: &mut image::RgbaImage, general: &General, font: &Font, rel: &Relation,
+pub fn draw_rel(buffer: &mut image::RgbaImage, general: &General, fonts: &Vec<Font>, rel: &Relation,
                 start: &XY, end: &XY, base_first: u32) {
     println!("from: {}, from card: {}", rel.from_class, rel.from_class_card);
     println!("to: {}, to card: {}", rel.to_class, rel.to_class_card);
-    let mut start_rel_y: u32 = if start.y == base_first {start.y + RELATION_STICK} else {start.y - RELATION_STICK};
-    draw_line_segment_mut(buffer,
-                              (start.x as f32, start.y as f32),
-                              (start.x as f32, (start_rel_y) as f32),
-                              general.colors.black);
-    draw_line_segment_mut(buffer,
-                          (start.x as f32, start_rel_y as f32),
-                          (end.x as f32, end.y as f32),
-                          general.colors.black);
+
+    let mut is_in_first: bool = if start.y == base_first { true } else { false };
+    let mut start_rel_y: u32 = if is_in_first {start.y + RELATION_STICK} else {start.y - RELATION_STICK};
+
+
+    // Arrows
+    match rel.arrow_type {
+        RelationArrow::Arrow => {
+            if is_in_first {
+                let mut leftx: u32;
+                let mut lefty: u32;
+                let mut rightx: u32;
+                let mut righty: u32;
+            } else {
+                let mut leftx: u32;
+                let mut lefty: u32;
+                let mut rightx: u32;
+                let mut righty: u32;
+            }
+        }
+        RelationArrow::TriangleEmpty => {
+
+        }
+        RelationArrow::DiamondEmpty => {
+
+        }
+        RelationArrow::DiamondFilled => {
+
+        }
+        RelationArrow::None => {
+
+        }
+    }
+
+    // Lines
+    // Little line / stick
+    match rel.border_type {
+        BorderType::Solid => {
+            draw_line_segment_mut(buffer,
+                                  (start.x as f32, start.y as f32),
+                                  (start.x as f32, (start_rel_y) as f32),
+                                  general.colors.black);
+            // Big line
+            draw_line_segment_mut(buffer,
+                                  (start.x as f32, start_rel_y as f32),
+                                  (end.x as f32, end.y as f32),
+                                  general.colors.black);
+        }
+        BorderType::Dashed => {
+            let start_y_temp = start.y;
+            if is_in_first {
+                while start_y_temp > start_rel_y {
+                    draw_line_segment_mut(buffer,
+                                          (start.x as f32, start_y_temp as f32),
+                                          (start.x as f32, (start_y_temp + DASHED_LENGTH) as f32),
+                                          general.colors.black);
+                }
+            } else {
+                while start_y_temp < start_rel_y {
+                    draw_line_segment_mut(buffer,
+                                          (start.x as f32, start_y_temp as f32),
+                                          (start.x as f32, (start_y_temp - DASHED_LENGTH) as f32),
+                                          general.colors.black);
+                }
+            }
+
+            // Big line
+            draw_line_segment_mut(buffer,
+                                  (start.x as f32, start_rel_y as f32),
+                                  (end.x as f32, end.y as f32),
+                                  general.colors.black);
+        }
+        BorderType::None => {
+
+        }
+    }
 
 }
