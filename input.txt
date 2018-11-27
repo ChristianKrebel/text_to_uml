@@ -59,7 +59,7 @@ Klasse2,Klasse1
 n,n
 
 Association
-Klasse1,Klasse2
+Klasse1,WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW
 1,n
 
 Dependency
@@ -71,14 +71,13 @@ Klasse1,Klasse2
 1,n
 
 Implementation
-Klasse2,Klasse1
+Klasse2,lol
 1,n
 
 Aggregation
-Klasse1,Klasse2
+Klasse1,lol
 1,n
 
 Composition
-Klasse2,Klasse1
+Test,lol
 1,n
->>>>>>> master

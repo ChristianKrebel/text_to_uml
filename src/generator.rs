@@ -64,7 +64,7 @@ const LETTER_WIDTH: u32 = 13;
 const RELATION_GAP: u32 = 400;
 const PADDING_LEFT: u32 = 4;
 const PADDING_TOP: u32 = 2;
-const RELATION_STICK: u32 = 50;
+const RELATION_STICK: u32 = RELATION_GAP / 8;
 
 pub fn generate_pic(class_vec: &mut Vec<Class>, rel_vec: &mut Vec<Relation>) {
     println!("{:?}", rel_vec);
@@ -324,7 +324,7 @@ pub fn generate_pic(class_vec: &mut Vec<Class>, rel_vec: &mut Vec<Relation>) {
                         end: xy2
                     };*/
 
-                    draw_rel(&mut imgbuf, &general, &font, &rel, &xy1, &xy2);
+                    draw_rel(&mut imgbuf, &general, &font, &rel, &xy1, &xy2, base_line_first_half);
                 }
             }
         }
@@ -482,11 +482,17 @@ pub fn draw_class(buffer: &mut image::RgbaImage, general: &General, font: &Font,
     }
 }
 
-pub fn draw_rel(buffer: &mut image::RgbaImage, general: &General, font: &Font, rel: &Relation, start: &XY, end: &XY) {
+pub fn draw_rel(buffer: &mut image::RgbaImage, general: &General, font: &Font, rel: &Relation,
+                start: &XY, end: &XY, base_first: u32) {
     println!("from: {}, from card: {}", rel.from_class, rel.from_class_card);
     println!("to: {}, to card: {}", rel.to_class, rel.to_class_card);
+    let mut start_rel_y: u32 = if start.y == base_first {start.y + RELATION_STICK} else {start.y - RELATION_STICK};
     draw_line_segment_mut(buffer,
-                          (start.x as f32, start.y as f32),
+                              (start.x as f32, start.y as f32),
+                              (start.x as f32, (start_rel_y) as f32),
+                              general.colors.black);
+    draw_line_segment_mut(buffer,
+                          (start.x as f32, start_rel_y as f32),
                           (end.x as f32, end.y as f32),
                           general.colors.black);
 
