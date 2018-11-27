@@ -62,10 +62,23 @@ Association
 Klasse1,Klasse2
 1,n
 
-Association
-Klasse1,lol
+Dependency
+Klasse2,Klasse1
 1,n
 
-Association
-Klasse1,WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW
-n,n
+Inheritance
+Klasse1,Klasse2
+1,n
+
+Implementation
+Klasse2,Klasse1
+1,n
+
+Aggregation
+Klasse1,Klasse2
+1,n
+
+Composition
+Klasse2,Klasse1
+1,n
+>>>>>>> master

@@ -77,7 +77,7 @@ fn parse_lines(lines: &mut Vec<String>, classes: &mut Vec<Class>, relations: &mu
                 arrow_type = RelationArrow::DiamondFilled;
                 relation_border = BorderType::Solid;
             }else{
-                println!("No RelationType fitting found.");
+                println!("No RelationType fitting found. '{}'", relation_string);
             }
 
             //println!("Value of relation_type: {:?}", relation_type);
@@ -122,6 +122,8 @@ fn parse_lines(lines: &mut Vec<String>, classes: &mut Vec<Class>, relations: &mu
             let mut opt_cards_str = opt_cards.unwrap();
             opt_cards_str.pop();
 
+            //println!("opt_cards_str: '{}'", opt_cards_str);
+
             if opt_cards_str.is_empty() {
                 println!("Error in relation syntax: Missing lines following class type definition");
                 break;
@@ -143,6 +145,22 @@ fn parse_lines(lines: &mut Vec<String>, classes: &mut Vec<Class>, relations: &mu
             println!("Full struct for relation: {:?}", relation);
 
             relations.push(relation);
+
+
+            let mut opt_empty_line = lines.pop();
+
+            if !opt_empty_line.is_some() {
+                continue;
+            }
+
+            let mut empty_line_str = opt_empty_line.unwrap();
+            empty_line_str.pop();
+
+            //println!("empty_line: '{}'", empty_line_str);
+
+            if opt_cards_str.is_empty() {
+                continue;
+            }
 
         }else{
             //Case: The header line was a class
@@ -191,11 +209,13 @@ fn parse_lines(lines: &mut Vec<String>, classes: &mut Vec<Class>, relations: &mu
                 break;
             }
 
-            line_stereo.pop();
+            //let mut line_stereo_before = String::from(line_stereo)
+            //line_stereo.pop();
 
             let mut class_stereotype: String;
 
-            if line_stereo.starts_with("<<") && line_stereo.ends_with(">>") {
+            if line_stereo.starts_with("<<") && line_stereo.ends_with(">>\r") {
+                line_stereo.pop();
                 class_stereotype = line_stereo;
             }else{
                 class_stereotype = String::from("");
@@ -253,10 +273,6 @@ fn parse_lines(lines: &mut Vec<String>, classes: &mut Vec<Class>, relations: &mu
 
                 line_inner = line_inner.chars().skip(skip).take(line_inner.len()-skip).collect();
 
-                /*println!("left of line after first cut: {}", line_inner);
-                println!("classType: {:?}", class_type);
-                println!("className: {}", class_name);
-                println!("field visibility: {:?}", field_visibility);*/
 
                 if line_inner.starts_with("static "){
                     skip = 7;
@@ -264,6 +280,19 @@ fn parse_lines(lines: &mut Vec<String>, classes: &mut Vec<Class>, relations: &mu
 
                     line_inner = line_inner.chars().skip(skip).take(line_inner.len()-skip).collect();
                 }
+
+                let mut split = line_inner.split(" ");
+                let all_in_line: Vec<&str> = split.collect();
+
+                let mut line_left = String::new();
+
+                if all_in_line.len() > 1{
+                    let strEnd: String = all_in_line.get(0).unwrap().to_string();
+                    let mut strStart: String = line_inner.chars().skip(strEnd.len()+1).take(line_inner.len()-(strEnd.len()+1)).collect();
+                    line_left = strStart + ": " + &strEnd;
+                }
+
+
 
                 let mut vis_string: String = String::new();
 
@@ -277,7 +306,7 @@ fn parse_lines(lines: &mut Vec<String>, classes: &mut Vec<Class>, relations: &mu
                     vis_string = String::from("- ");
                 }
 
-                let mut total: String = vis_string + &line_inner;
+                let mut total: String = vis_string + &line_left;
 
                 let mut field_decor: TextDecoration = TextDecoration::None;
 
