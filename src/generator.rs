@@ -545,9 +545,9 @@ pub fn draw_rel(buffer: &mut image::RgbaImage, general: &General, fonts: &Vec<Fo
     }
 
     // Lines
-    // Little line / stick
     match rel.border_type {
         BorderType::Solid => {
+            // Little line / stick
             draw_line_segment_mut(buffer,
                                   (start.x as f32, start.y as f32),
                                   (start.x as f32, (start_rel_y) as f32),
@@ -559,28 +559,46 @@ pub fn draw_rel(buffer: &mut image::RgbaImage, general: &General, fonts: &Vec<Fo
                                   general.colors.black);
         }
         BorderType::Dashed => {
-            let start_y_temp = start.y;
+            let mut start_y_temp = start.y;
+            // Little line / stick
             if is_in_first {
-                while start_y_temp > start_rel_y {
+                while start_y_temp < start_rel_y {
                     draw_line_segment_mut(buffer,
                                           (start.x as f32, start_y_temp as f32),
                                           (start.x as f32, (start_y_temp + DASHED_LENGTH) as f32),
                                           general.colors.black);
+                    start_y_temp += DASHED_LENGTH*2;
+                }
+                // Big line
+                // Try Vector: AB=OB-OA  :  start-end
+                start_y_temp = start_rel_y;
+                while start_y_temp < end.y {
+                    draw_line_segment_mut(buffer,
+                                          (start.x as f32, start_rel_y as f32),
+                                          (end.x as f32, (start_y_temp + DASHED_LENGTH) as f32),
+                                          general.colors.black);
+                    start_y_temp += DASHED_LENGTH*2;
                 }
             } else {
-                while start_y_temp < start_rel_y {
+                while start_y_temp > start_rel_y {
                     draw_line_segment_mut(buffer,
                                           (start.x as f32, start_y_temp as f32),
                                           (start.x as f32, (start_y_temp - DASHED_LENGTH) as f32),
                                           general.colors.black);
+                    start_y_temp -= DASHED_LENGTH * 2;
+                }
+                // Big line
+                start_y_temp = start_rel_y;
+                while start_y_temp > end.y {
+                    draw_line_segment_mut(buffer,
+                                          (start.x as f32, start_rel_y as f32),
+                                          (end.x as f32, (start_y_temp - DASHED_LENGTH) as f32),
+                                          general.colors.black);
+                    start_y_temp -= DASHED_LENGTH * 2;
                 }
             }
 
-            // Big line
-            draw_line_segment_mut(buffer,
-                                  (start.x as f32, start_rel_y as f32),
-                                  (end.x as f32, end.y as f32),
-                                  general.colors.black);
+
         }
         BorderType::None => {
 
