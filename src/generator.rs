@@ -60,12 +60,13 @@ pub struct General {
 }
 
 const LINE_HEIGHT: u32 = 30;
-const LETTER_WIDTH: u32 = 13;
+const LETTER_WIDTH: u32 = 14;
 const RELATION_GAP: u32 = 400;
 const PADDING_LEFT: u32 = 4;
 const PADDING_TOP: u32 = 2;
 const RELATION_STICK: u32 = RELATION_GAP / 8;
 const DASHED_LENGTH: u32 = 10;
+const DASHED_LENGTH2: u32 = DASHED_LENGTH * 5;
 
 pub fn generate_pic(class_vec: &mut Vec<Class>, rel_vec: &mut Vec<Relation>) {
     println!("{:?}", rel_vec);
@@ -216,19 +217,19 @@ pub fn generate_pic(class_vec: &mut Vec<Class>, rel_vec: &mut Vec<Relation>) {
     let mut font_vec: Vec<Font> = Vec::new();
 
     // Load the font
-    let font_data = include_bytes!("../fonts/Roboto-Regular.ttf");
+    let font_data = include_bytes!("../fonts/UbuntuMono-R.ttf");
     // This only succeeds if collection consists of one font
     font_vec.push(Font::from_bytes(font_data as &[u8]).expect("Error constructing Font"));
     // Load the font
-    let font_data2 = include_bytes!("../fonts/Roboto-Italic.ttf");
+    let font_data2 = include_bytes!("../fonts/UbuntuMono-RI.ttf");
     // This only succeeds if collection consists of one font
     font_vec.push(Font::from_bytes(font_data2 as &[u8]).expect("Error constructing Font"));
     // Load the font
-    let font_data3 = include_bytes!("../fonts/Roboto-Bold.ttf");
+    let font_data3 = include_bytes!("../fonts/UbuntuMono-B.ttf");
     // This only succeeds if collection consists of one font
     font_vec.push(Font::from_bytes(font_data3 as &[u8]).expect("Error constructing Font"));
     // Load the font
-    let font_data4 = include_bytes!("../fonts/Roboto-BoldItalic.ttf");
+    let font_data4 = include_bytes!("../fonts/UbuntuMono-BI.ttf");
     // This only succeeds if collection consists of one font
     font_vec.push(Font::from_bytes(font_data4 as &[u8]).expect("Error constructing Font"));
 
@@ -512,7 +513,7 @@ pub fn draw_rel(buffer: &mut image::RgbaImage, general: &General, fonts: &Vec<Fo
     println!("to: {}, to card: {}", rel.to_class, rel.to_class_card);
 
     let mut is_in_first: bool = if start.y == base_first { true } else { false };
-    let mut start_rel_y: u32 = if is_in_first {start.y + RELATION_STICK} else {start.y - RELATION_STICK};
+    let mut start_rel_y: f32 = if is_in_first {(start.y + RELATION_STICK) as f32} else {(start.y - RELATION_STICK) as f32};
 
 
     // Arrows
@@ -559,42 +560,61 @@ pub fn draw_rel(buffer: &mut image::RgbaImage, general: &General, fonts: &Vec<Fo
                                   general.colors.black);
         }
         BorderType::Dashed => {
-            let mut start_y_temp = start.y;
+            let mut start_y_temp = start.y as f32;
             // Little line / stick
             if is_in_first {
                 while start_y_temp < start_rel_y {
+                    println!("while1");
                     draw_line_segment_mut(buffer,
                                           (start.x as f32, start_y_temp as f32),
-                                          (start.x as f32, (start_y_temp + DASHED_LENGTH) as f32),
+                                          (start.x as f32, (start_y_temp + DASHED_LENGTH as f32) as f32),
                                           general.colors.black);
-                    start_y_temp += DASHED_LENGTH*2;
+                    start_y_temp += DASHED_LENGTH as f32 *2.0;
                 }
                 // Big line
                 // Try Vector: AB=OB-OA  :  start-end
+                let mut step_x = -(start.x as f32 - end.x as f32);
+                let mut step_y = -(start_rel_y as f32 - end.y as f32);
+                println!("VECTOR x: {}, y: {}", step_x, step_y);
+                step_x /= DASHED_LENGTH2 as f32;
+                step_y /= DASHED_LENGTH2 as f32;
                 start_y_temp = start_rel_y;
-                while start_y_temp < end.y {
+                let mut start_x_temp = start.x as f32;
+                while start_y_temp < end.y as f32 - step_y as f32 {
+                    println!("while2");
                     draw_line_segment_mut(buffer,
-                                          (start.x as f32, start_rel_y as f32),
-                                          (end.x as f32, (start_y_temp + DASHED_LENGTH) as f32),
+                                          (start_x_temp as f32, start_y_temp as f32),
+                                          ((start_x_temp as f32  + step_x) as f32, (start_y_temp as f32 + step_y) as f32),
                                           general.colors.black);
-                    start_y_temp += DASHED_LENGTH*2;
+                    start_x_temp += step_x*2.0 as f32;
+                    start_y_temp += step_y*2.0 as f32;
                 }
             } else {
                 while start_y_temp > start_rel_y {
+                    println!("while1");
                     draw_line_segment_mut(buffer,
                                           (start.x as f32, start_y_temp as f32),
-                                          (start.x as f32, (start_y_temp - DASHED_LENGTH) as f32),
+                                          (start.x as f32, (start_y_temp - DASHED_LENGTH as f32) as f32),
                                           general.colors.black);
-                    start_y_temp -= DASHED_LENGTH * 2;
+                    start_y_temp -= DASHED_LENGTH as f32 *2.0;
                 }
                 // Big line
+                // Try Vector: AB=OB-OA  :  start-end
+                let mut step_x = (start.x as f32 - end.x as f32);
+                let mut step_y = (start_rel_y as f32 - end.y as f32);
+                println!("VECTOR2 x: {}, y: {}", step_x, step_y);
+                step_x /= DASHED_LENGTH2 as f32;
+                step_y /= DASHED_LENGTH2 as f32;
                 start_y_temp = start_rel_y;
-                while start_y_temp > end.y {
+                let mut start_x_temp = start.x as f32;
+                while start_y_temp > end.y as f32 {
+                    println!("while2:: start_y_temp: {}, {}", start_y_temp, end.y);
                     draw_line_segment_mut(buffer,
-                                          (start.x as f32, start_rel_y as f32),
-                                          (end.x as f32, (start_y_temp - DASHED_LENGTH) as f32),
+                                          (start_x_temp as f32, start_y_temp as f32),
+                                          ((start_x_temp as f32 + step_x) as f32, (start_y_temp as f32 + step_y) as f32),
                                           general.colors.black);
-                    start_y_temp -= DASHED_LENGTH * 2;
+                    start_x_temp -= step_x * 2.0 as f32;
+                    start_y_temp -= step_y * 2.0 as f32;
                 }
             }
 

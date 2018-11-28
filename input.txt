@@ -21,7 +21,7 @@ public int fkt4()
 public int fkt4()
 public int fkt4()
 
-Class:WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW
+Class:MMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM
 <<abstract>>
 --
 public boolean fkt1()
@@ -59,7 +59,7 @@ Klasse2,Klasse1
 n,n
 
 Association
-Klasse1,WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW
+Klasse1,MMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM
 1,n
 
 Dependency
@@ -71,13 +71,17 @@ Klasse1,Klasse2
 1,n
 
 Implementation
-Klasse2,lol
+Klasse2,Test
 1,n
 
 Aggregation
 Klasse1,lol
 1,n
 
-Composition
+Dependency
 Test,lol
+1,n
+
+Dependency
+Test,Klasse1
 1,n
