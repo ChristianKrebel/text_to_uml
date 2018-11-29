@@ -61,6 +61,7 @@ const PADDING_TOP: u32 = 2;
 const RELATION_STICK: u32 = RELATION_GAP / 8;
 const DASHED_LENGTH: u32 = 10;
 const DASHED_LENGTH2: u32 = DASHED_LENGTH * 5;
+const REL_GAP_DISTANCE: f32 = 12.0;
 
 pub fn generate_pic(class_vec: &mut Vec<Class>, rel_vec: &mut Vec<Relation>) {
     println!("{:?}", rel_vec);
@@ -258,6 +259,9 @@ pub fn generate_pic(class_vec: &mut Vec<Class>, rel_vec: &mut Vec<Relation>) {
 
     // ------ Layouting all relations ------
 
+    let mut rel_gap_first = REL_GAP_DISTANCE;
+    let mut rel_gap_second = REL_GAP_DISTANCE;
+
     println!("class_vec len: {}", class_vec.len());
     let mut all_to_class_rels_vec: Vec<Vec<bool>> = Vec::new();
     for (i, c) in class_vec.iter().enumerate() {
@@ -380,7 +384,12 @@ pub fn generate_pic(class_vec: &mut Vec<Class>, rel_vec: &mut Vec<Relation>) {
                         y: y_end
                     };
 
-                    draw_rel(&mut imgbuf, &general, &font_vec, &rel, &xy1, &xy2, base_line_first_half);
+                    let mut zwerg = draw_rel(&mut imgbuf, &general, &font_vec,
+                                             &rel, &xy1, &xy2,
+                                             base_line_first_half,
+                                             rel_gap_first, rel_gap_second);
+                    rel_gap_first = zwerg[0];
+                    rel_gap_second = zwerg[1];
                 }
             }
         }
@@ -524,25 +533,24 @@ pub fn draw_class(buffer: &mut image::RgbaImage, general: &General, fonts: &Vec<
             // TODO
         }
         ClassType::DashedBorderClass => {
-            // TODO
         }
         ClassType::VarBorderClass => {
-            // TODO
         }
         ClassType::None => {
-            // TODO
         }
     }
 }
 
 pub fn draw_rel(buffer: &mut image::RgbaImage, general: &General, fonts: &Vec<Font>, rel: &Relation,
-                start: &XY, end: &XY, base_first: u32) {
+                start: &XY, end: &XY, base_first: u32, rel_gap_first: f32, rel_gap_second: f32) -> Vec<f32> {
+
     println!("from: {}, from card: {}", rel.from_class, rel.from_class_card);
     println!("to: {}, to card: {}", rel.to_class, rel.to_class_card);
 
     let mut is_in_first: bool = if start.y == base_first { true } else { false };
     let mut start_rel_y: f32 = if is_in_first {(start.y + RELATION_STICK) as f32} else {(start.y - RELATION_STICK) as f32};
-
+    let mut rel_gap_first = rel_gap_first;
+    let mut rel_gap_second = rel_gap_second;
 
     // Arrows
     match rel.arrow_type {
@@ -579,17 +587,26 @@ pub fn draw_rel(buffer: &mut image::RgbaImage, general: &General, fonts: &Vec<Fo
             // Little line / stick
             draw_line_segment_mut(buffer,
                                   (start.x as f32, start.y as f32),
-                                  (start.x as f32, (start_rel_y) as f32),
+                                  (start.x as f32, start_rel_y as f32 + (
+                                      if is_in_first { rel_gap_first } else { -rel_gap_second })),
                                   general.colors.black);
             // Big lines
             draw_line_segment_mut(buffer,
-                                  (start.x as f32, start_rel_y as f32),
-                                  (end.x as f32, start_rel_y as f32),
+                                  (start.x as f32, start_rel_y as f32 + (
+                                      if is_in_first { rel_gap_first } else { -rel_gap_second })),
+                                  (end.x as f32, start_rel_y as f32 + (
+                                      if is_in_first { rel_gap_first } else { -rel_gap_second })),
                                   general.colors.black);
             draw_line_segment_mut(buffer,
-                                  (end.x as f32, start_rel_y as f32),
+                                  (end.x as f32, start_rel_y as f32 + (
+                                      if is_in_first { rel_gap_first } else { -rel_gap_second })),
                                   (end.x as f32, end.y as f32),
                                   general.colors.black);
+            if is_in_first {
+                rel_gap_first += REL_GAP_DISTANCE;
+            } else {
+                rel_gap_second += REL_GAP_DISTANCE;
+            }
         }
         BorderType::Dashed => {
             let mut start_y_temp = start.y as f32;
@@ -656,5 +673,8 @@ pub fn draw_rel(buffer: &mut image::RgbaImage, general: &General, fonts: &Vec<Fo
 
         }
     }
-
+    let mut ret: Vec<f32> = Vec::new();
+    ret.push(rel_gap_first);
+    ret.push(rel_gap_second);
+    ret
 }
