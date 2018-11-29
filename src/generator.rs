@@ -18,6 +18,7 @@ use std::ptr::null;
 use std::str::*;
 use std::string::*;
 use std::mem;
+use std::num::Wrapping;
 use self::rand::Rng;
 
 use self::image::{DynamicImage, GenericImage, Pixel, Rgba, RgbaImage, ImageFormat};
@@ -64,9 +65,9 @@ const DASHED_LENGTH2: u32 = DASHED_LENGTH * 5;
 const REL_GAP_DISTANCE: f32 = 20.0;
 const ARROW_SIZE: u32 = 20;
 const ACTIVE_PADDING: u32 = PADDING_LEFT * 2;
+const CARD_DIST: u32 = 4;
 
 pub fn generate_pic(class_vec: &mut Vec<Class>, rel_vec: &mut Vec<Relation>) {
-    println!("{:?}", rel_vec);
     let path = Path::new("output.png");
 
     // ------ Layouting all classes ------
@@ -115,15 +116,12 @@ pub fn generate_pic(class_vec: &mut Vec<Class>, rel_vec: &mut Vec<Relation>) {
     let mut top_line_second_half: u32 = if class_count == 1
         {base_line_first_half} else {base_line_first_half + RELATION_GAP};
 
-    /*println!("{}", greatest_height_first_half);
-    println!("{}", greatest_height_second_half);*/
 
     let mut last_left_distance_uneven: u32 = 50;
     let mut last_left_distance_even: u32 = 50;
 
     for (i,c) in class_vec.iter().enumerate() {
-        println!("LLDU: {}", last_left_distance_uneven);
-        println!("LLDE: {}", last_left_distance_even);
+
         let mut greatest_width: u32 = 0;
         for line in c.content_lines.iter() {
             if line.len() as u32 > greatest_width {
@@ -232,7 +230,7 @@ pub fn generate_pic(class_vec: &mut Vec<Class>, rel_vec: &mut Vec<Relation>) {
 
     // The font size to use
     let scales: Scales = Scales {
-        one: Scale::uniform(32.0),
+        one: Scale::uniform(18.0),
         two: Scale::uniform(26.0),
     };
 
@@ -264,14 +262,12 @@ pub fn generate_pic(class_vec: &mut Vec<Class>, rel_vec: &mut Vec<Relation>) {
     let mut rel_gap_first = REL_GAP_DISTANCE;
     let mut rel_gap_second = REL_GAP_DISTANCE;
 
-    println!("class_vec len: {}", class_vec.len());
     let mut all_to_class_rels_vec: Vec<Vec<bool>> = Vec::new();
     for (i, c) in class_vec.iter().enumerate() {
         let mut empty_vec: Vec<bool> = Vec::new();
         empty_vec.push(true);
         all_to_class_rels_vec.push(empty_vec);
     }
-    println!("{:?}", all_to_class_rels_vec);
 
 
     for (i, c) in class_vec.iter().enumerate() {
@@ -285,13 +281,10 @@ pub fn generate_pic(class_vec: &mut Vec<Class>, rel_vec: &mut Vec<Relation>) {
         }
         all_to_class_rels_vec[i] = to_class_rels_vec;
     }
-    println!("{:?}", all_to_class_rels_vec);
 
 
-    println!("{:?}", rel_vec);
     // Durch alle Klassen
     for (i,c) in class_vec.iter().enumerate() {
-        println!("cname: {}", c.class_name);
         let mut rel_starts: Vec<XY> = Vec::new();
         let mut rel_starts_stepsize: u32;
         let mut rel_ends_stepsize: u32;
@@ -300,21 +293,16 @@ pub fn generate_pic(class_vec: &mut Vec<Class>, rel_vec: &mut Vec<Relation>) {
 
         // Durch alle Relationen
         for (index, rel) in rel_vec.iter().enumerate() {
-            println!("rel index: {}", index);
             // Wenn Relation ausgeht, dann speichere Index der Relation
             if rel.from_class == c.class_name {
-                println!("rel.from_class == c.class_name - index: {}", index);
                 rels_indexes.push(index);
             }
             // Wenn Relation eingeht, dann speichere Index der Relation
             if rel.to_class == c.class_name {
-                println!("rel.from_class == c.class_name - index: {}", index);
                 rels_indexes2.push(index);
             }
         }
 
-        println!("rels_indexes.len(): {}", rels_indexes.len());
-        println!("rels_indexes.len(): {}", rels_indexes2.len());
 
         rel_starts_stepsize = (class_layout_vec[i].width/2) / (rels_indexes.len() as u32 + 1);
 
@@ -336,11 +324,9 @@ pub fn generate_pic(class_vec: &mut Vec<Class>, rel_vec: &mut Vec<Relation>) {
 
         // Durch alle Indexe der Relationen, die aus der Klasse gehen^
         for index in rels_indexes {
-            println!("crelation-index: {}", &index);
 
             // Durch alle Relationen
             for (l, rel) in rel_vec.iter().enumerate() {
-                println!("relation to: {}", rel.to_class);
                 // Wenn Index der Relation der Klasse dem Index der durchlaufenden Relation ist
                 if index == l {
 
@@ -353,12 +339,10 @@ pub fn generate_pic(class_vec: &mut Vec<Class>, rel_vec: &mut Vec<Relation>) {
                     let mut to_class_i: usize = 0;
                     for (ci, c) in class_vec.iter().enumerate() {
                         if c.class_name == rel.to_class {
-                            println!("class to: {}", c.class_name);
                             to_class_i = ci;
                         }
                     }
                     rel_ends_stepsize = (class_layout_vec[to_class_i].width/2) / (all_to_class_rels_vec[to_class_i].len() as u32 + 1);
-                    println!("rel_ends_stepsize: {}", rel_ends_stepsize);
                     if class_layout_vec[to_class_i].uneven {
                         x_end = class_layout_vec[to_class_i].lb.x + (class_layout_vec[to_class_i].width/2);
                         y_end = class_layout_vec[to_class_i].lb.y;
@@ -396,44 +380,10 @@ pub fn generate_pic(class_vec: &mut Vec<Class>, rel_vec: &mut Vec<Relation>) {
             }
         }
     }
-    // ------------
-    //println!("vec länge: {}", rel_layout_vec.len());
-    //println!("--- x:{}, y:{},  x:{}, y:{}", rel_layout_vec[0].start.x, rel_layout_vec[0].start.y, rel_layout_vec[0].end.x, rel_layout_vec[0].end.y);
-    /*for (i, r) in rel_layout_vec.iter().enumerate() {
-        println!("{}", i);
-        draw_rel(&mut imgbuf, &general, &font, &r);
-    }*/
-    // ------------
+
 
     // Save the picture
     imgbuf.save(&path).unwrap();
-
-
-    /*let mut img = DynamicImage::new_rgb8(imgx, imgy);
-
-    // Construct a rectangle with top-left corner at (4, 5), width 6 and height 7.
-    let rect = Rect::at(4, 5).of_size(6, 7);
-
-    // Contains top-left point:
-    assert_eq!(rect.left(), 4);
-    assert_eq!(rect.top(), 5);
-    assert!(rect.contains(rect.left(), rect.top()));
-
-    // Contains bottom-right point, at (left + width - 1, top + height - 1):
-    assert_eq!(rect.right(), 9);
-    assert_eq!(rect.bottom(), 11);
-    assert!(rect.contains(rect.right(), rect.bottom()));
-
-    let mut rng = rand::thread_rng();
-    let pos: (i32, i32) = (rng.gen_range(0, imgx as i32), rng.gen_range(0, imgy as i32));
-    let color = Rgba([0, 0, 0, 1]);
-
-    imageproc::drawing::draw_filled_circle_mut(&mut img, pos, 5, *color);*/
-
-    // Save the image as “fractal.png”, the format is deduced from the path
-    //imgbuf.save("test.png").unwrap();
-    //img.save(&mut File::create(&Path::new("output.png")).unwrap(), image::PNG);
-
 }
 
 pub fn draw_class(buffer: &mut image::RgbaImage, general: &General, fonts: &Vec<Font>, class: &Class,
@@ -448,8 +398,6 @@ pub fn draw_class(buffer: &mut image::RgbaImage, general: &General, fonts: &Vec<
 
     match class.class_type {
         ClassType::SimpleClass => {
-            println!("width: {}, height: {}", &class_layout.width, &class_layout.height);
-
             // Outer borderline
             draw_hollow_rect_mut(
                 buffer, imageproc::rect::Rect::at(
@@ -496,26 +444,20 @@ pub fn draw_class(buffer: &mut image::RgbaImage, general: &General, fonts: &Vec<
                 let mut is_underlined: bool = false;
                 match class.content_decor[i] {
                     TextDecoration::None => {
-                        println!("Textdeco: None");
                     }
                     TextDecoration::HorizontalLine => {
-                        println!("Textdeco: HorizontalLine");
                         is_horizontal_line = true;
                     }
                     TextDecoration::Bold => {
-                        println!("Textdeco: Bold");
                         deco_font = 2;
                     }
                     TextDecoration::Italic => {
-                        println!("Textdeco: Italic");
                         deco_font = 1;
                     }
                     TextDecoration::BoldItalic => {
-                        println!("Textdeco: BoldItalic");
                         deco_font = 3;
                     }
                     TextDecoration::Underlined => {
-                        println!("Textdeco: Underlined");
                         is_underlined = true;
                     }
                 }
@@ -590,26 +532,20 @@ pub fn draw_class(buffer: &mut image::RgbaImage, general: &General, fonts: &Vec<
                 let mut is_underlined: bool = false;
                 match class.content_decor[i] {
                     TextDecoration::None => {
-                        println!("Textdeco: None");
                     }
                     TextDecoration::HorizontalLine => {
-                        println!("Textdeco: HorizontalLine");
                         is_horizontal_line = true;
                     }
                     TextDecoration::Bold => {
-                        println!("Textdeco: Bold");
                         deco_font = 2;
                     }
                     TextDecoration::Italic => {
-                        println!("Textdeco: Italic");
                         deco_font = 1;
                     }
                     TextDecoration::BoldItalic => {
-                        println!("Textdeco: BoldItalic");
                         deco_font = 3;
                     }
                     TextDecoration::Underlined => {
-                        println!("Textdeco: Underlined");
                         is_underlined = true;
                     }
                 }
@@ -690,26 +626,20 @@ pub fn draw_class(buffer: &mut image::RgbaImage, general: &General, fonts: &Vec<
                 let mut is_underlined: bool = false;
                 match class.content_decor[i] {
                     TextDecoration::None => {
-                        println!("Textdeco: None");
                     }
                     TextDecoration::HorizontalLine => {
-                        println!("Textdeco: HorizontalLine");
                         is_horizontal_line = true;
                     }
                     TextDecoration::Bold => {
-                        println!("Textdeco: Bold");
                         deco_font = 2;
                     }
                     TextDecoration::Italic => {
-                        println!("Textdeco: Italic");
                         deco_font = 1;
                     }
                     TextDecoration::BoldItalic => {
-                        println!("Textdeco: BoldItalic");
                         deco_font = 3;
                     }
                     TextDecoration::Underlined => {
-                        println!("Textdeco: Underlined");
                         is_underlined = true;
                     }
                 }
@@ -892,6 +822,21 @@ pub fn draw_rel(buffer: &mut image::RgbaImage, general: &General, fonts: &Vec<Fo
                                   (start.x as f32, start_rel_y as f32 + (
                                       if is_in_first { rel_gap_first } else { -rel_gap_second })),
                                   general.colors.black);
+            // Card. / multiplicities
+            if !rel.from_class_card.is_empty() {
+                draw_text_mut(
+                    buffer, general.colors.black, start.x as u32 + CARD_DIST as u32,
+                    start_rel_y as u32 + (
+                        if is_in_first { rel_gap_first } else { -rel_gap_second }) as u32 + CARD_DIST as u32,
+                    general.scales.one, &fonts[0], &rel.from_class_card);
+            }
+            if !rel.to_class_card.is_empty() {
+                draw_text_mut(
+                    buffer, general.colors.black, end.x as u32 + CARD_DIST as u32,
+                    start_rel_y as u32 + (
+                        if is_in_first { rel_gap_first } else { -rel_gap_second }) as u32 + CARD_DIST as u32,
+                    general.scales.one, &fonts[0], &rel.to_class_card);
+            }
             // Big lines
             draw_line_segment_mut(buffer,
                                   (start.x as f32, start_rel_y as f32 + (
@@ -911,8 +856,25 @@ pub fn draw_rel(buffer: &mut image::RgbaImage, general: &General, fonts: &Vec<Fo
             }
         }
         BorderType::Dashed => {
+            //let mut start_rel_y = Wrapping(start_rel_y);
             let mut start_y_temp = start.y as f32;
             let mut start_x_temp = start.x as f32;
+            // Card. / multiplicities
+            /*
+            if !rel.from_class_card.is_empty() {
+                draw_text_mut(
+                    buffer, general.colors.black, start.x as u32 + CARD_DIST as u32,
+                    start_rel_y as u32 + (
+                        if is_in_first { rel_gap_first } else { -rel_gap_second }) as u32 + CARD_DIST as u32,
+                    general.scales.one, &fonts[0], &rel.from_class_card);
+            }
+            if !rel.to_class_card.is_empty() {
+                draw_text_mut(
+                    buffer, general.colors.black, end.x as u32 + CARD_DIST as u32,
+                    start_rel_y as u32 + (
+                        if is_in_first { rel_gap_first } else { -rel_gap_second }) as u32 + CARD_DIST as u32,
+                    general.scales.one, &fonts[0], &rel.to_class_card);
+            }*/
             // Little line / stick
             if is_in_first {
                 while start_y_temp < start_rel_y + rel_gap_first {
