@@ -493,6 +493,7 @@ pub fn draw_class(buffer: &mut image::RgbaImage, general: &General, fonts: &Vec<
             let mut deco_font: u32 = 0;
             for (i, line) in class.content_lines.iter().enumerate() {
                 let mut is_horizontal_line: bool = false;
+                let mut is_underlined: bool = false;
                 match class.content_decor[i] {
                     TextDecoration::None => {
                         println!("Textdeco: None");
@@ -515,7 +516,7 @@ pub fn draw_class(buffer: &mut image::RgbaImage, general: &General, fonts: &Vec<
                     }
                     TextDecoration::Underlined => {
                         println!("Textdeco: Underlined");
-                        // TODO
+                        is_underlined = true;
                     }
                 }
                 if is_horizontal_line || line.is_empty() || line == "-" {
@@ -529,6 +530,15 @@ pub fn draw_class(buffer: &mut image::RgbaImage, general: &General, fonts: &Vec<
                     draw_text_mut(
                         buffer, colors.black, class_layout.lt.x + PADDING_LEFT,
                         height_to_write_at, scales.two, &fonts[deco_font as usize], &line);
+                    if is_underlined {
+                        draw_line_segment_mut(buffer,
+                                              ((class_layout.lt.x + PADDING_LEFT) as f32,
+                                               height_to_write_at as f32 + LINE_HEIGHT as f32 - 6.0),
+                                              ((class_layout.lt.x + PADDING_LEFT) as f32 +
+                                                   (LETTER_WIDTH as f32 * (line.len() as f32 - 1.0)),
+                                               height_to_write_at as f32 + LINE_HEIGHT as f32 - 6.0),
+                                              general.colors.black);
+                    }
                 }
                 height_to_write_at += LINE_HEIGHT;
             }
@@ -577,6 +587,7 @@ pub fn draw_class(buffer: &mut image::RgbaImage, general: &General, fonts: &Vec<
             let mut deco_font: u32 = 0;
             for (i, line) in class.content_lines.iter().enumerate() {
                 let mut is_horizontal_line: bool = false;
+                let mut is_underlined: bool = false;
                 match class.content_decor[i] {
                     TextDecoration::None => {
                         println!("Textdeco: None");
@@ -599,7 +610,7 @@ pub fn draw_class(buffer: &mut image::RgbaImage, general: &General, fonts: &Vec<
                     }
                     TextDecoration::Underlined => {
                         println!("Textdeco: Underlined");
-                        // TODO
+                        is_underlined = true;
                     }
                 }
                 if is_horizontal_line || line.is_empty() || line == "-" {
@@ -613,6 +624,15 @@ pub fn draw_class(buffer: &mut image::RgbaImage, general: &General, fonts: &Vec<
                     draw_text_mut(
                         buffer, colors.black, class_layout.lt.x + PADDING_LEFT,
                         height_to_write_at, scales.two, &fonts[deco_font as usize], &line);
+                    if is_underlined {
+                        draw_line_segment_mut(buffer,
+                                              ((class_layout.lt.x + PADDING_LEFT) as f32,
+                                               height_to_write_at as f32 + LINE_HEIGHT as f32 - 6.0),
+                                              ((class_layout.lt.x + PADDING_LEFT) as f32 +
+                                                   (LETTER_WIDTH as f32 * (line.len() as f32 - 1.0)),
+                                               height_to_write_at as f32 + LINE_HEIGHT as f32 - 6.0),
+                                              general.colors.black);
+                    }
                 }
                 height_to_write_at += LINE_HEIGHT;
             }
@@ -667,6 +687,7 @@ pub fn draw_class(buffer: &mut image::RgbaImage, general: &General, fonts: &Vec<
             let mut deco_font: u32 = 0;
             for (i, line) in class.content_lines.iter().enumerate() {
                 let mut is_horizontal_line: bool = false;
+                let mut is_underlined: bool = false;
                 match class.content_decor[i] {
                     TextDecoration::None => {
                         println!("Textdeco: None");
@@ -689,7 +710,7 @@ pub fn draw_class(buffer: &mut image::RgbaImage, general: &General, fonts: &Vec<
                     }
                     TextDecoration::Underlined => {
                         println!("Textdeco: Underlined");
-                        // TODO
+                        is_underlined = true;
                     }
                 }
                 if is_horizontal_line || line.is_empty() || line == "-" {
@@ -703,6 +724,15 @@ pub fn draw_class(buffer: &mut image::RgbaImage, general: &General, fonts: &Vec<
                     draw_text_mut(
                         buffer, colors.black, class_layout.lt.x + ACTIVE_PADDING,
                         height_to_write_at, scales.two, &fonts[deco_font as usize], &line);
+                    if is_underlined {
+                        draw_line_segment_mut(buffer,
+                                              ((class_layout.lt.x + ACTIVE_PADDING) as f32,
+                                               height_to_write_at as f32 + LINE_HEIGHT as f32 - 6.0),
+                                              ((class_layout.lt.x + ACTIVE_PADDING) as f32 +
+                                                   (LETTER_WIDTH as f32 * (line.len() as f32 - 1.0)),
+                                               height_to_write_at as f32 + LINE_HEIGHT as f32 - 6.0),
+                                              general.colors.black);
+                    }
                 }
                 height_to_write_at += LINE_HEIGHT;
             }
