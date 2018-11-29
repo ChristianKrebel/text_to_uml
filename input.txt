@@ -1,17 +1,20 @@
-Class:Person
-private String name
-private String vorname
+AbstractClass:Person
+--
+protected String name
+protected String vorname
 --
 public String getFullName()
 
 Class:Angestellter
-private static int ID
+--
+static int ID
 private String position
 --
 public Auftrag auftragErstellen()
 public void auftragBearbeiten()
 
 Class:Auftrag
+--
 private MyList<Item> inhalt
 private boolean done
 --
@@ -30,30 +33,25 @@ public int getCountInStock()
 public void changeCountInStock(int amount)
 
 Class:MyList
+--
 
 Class:List
 <<interface>>
-
-Aggregation
-Angestellter,Person
-1,1
+--
 
 Inheritance
-Person,Item
+Angestellter,Person
 1,1
 
 Association
 Angestellter,Auftrag
 0..n,1
 
-Composition
 Item,Auftrag
 1,1..n
 
 Implementation
 MyList,List
-1,1..n
 
-Inheritance
+Association
 Auftrag,MyList
-1,1..n

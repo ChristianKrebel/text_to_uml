@@ -9,6 +9,7 @@ mod generator;
 mod defines;
 use defines::*;
 use std::string::*;
+use std::env;
 
 fn main() {
     //gui::start();
@@ -25,7 +26,23 @@ fn main() {
     let mut classes: Vec<Class> = Vec::new();
     let mut relations: Vec<Relation> = Vec::new();
 
-    parser::init("input.txt", &mut classes, &mut relations);
+    let args: Vec<String> = env::args().collect();
+
+    let mut filename = "";
+    let mut output_filename = "";
+
+    if args.len() == 1 {
+        filename = "input.txt";
+        output_filename = "output.png";
+    }else if args.len() == 2 {
+        filename = args.get(1).unwrap();
+        output_filename = "output.png";
+    }else if args.len() == 3 {
+        filename = args.get(1).unwrap();
+        output_filename = args.get(2).unwrap();
+    }
+
+    parser::init(filename, &mut classes, &mut relations);
 
     //let mut class: Class = Class {class_type: ClassType::SimpleClass, class_name: name, border_width: 0, content_lines, content_decor};
     //classes.push(class);
