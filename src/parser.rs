@@ -9,6 +9,7 @@ use std::collections::HashSet;
 use std::env;
 use std::io::prelude::*;
 use std::str::*;
+use std::process::exit;
 
 use defines::*;
 
@@ -77,7 +78,8 @@ fn parse_lines(lines: &mut Vec<String>, classes: &mut Vec<Class>, relations: &mu
                 arrow_type = RelationArrow::DiamondFilled;
                 relation_border = BorderType::Solid;
             }else{
-                println!("No RelationType fitting found. '{}'", relation_string);
+                println!("No RelationType fitting found. '{}'\nAborting...", relation_string);
+                exit(-1);
             }
 
             //println!("Value of relation_type: {:?}", relation_type);
@@ -85,7 +87,7 @@ fn parse_lines(lines: &mut Vec<String>, classes: &mut Vec<Class>, relations: &mu
             let mut opt_classes = lines.pop();
 
             if !opt_classes.is_some() {
-                println!("Error in relation syntax: Missing lines following class type definition");
+                println!("Error in relation syntax: Missing lines following class type definition1");
                 break;
             }
 
@@ -93,16 +95,16 @@ fn parse_lines(lines: &mut Vec<String>, classes: &mut Vec<Class>, relations: &mu
             classes_str.pop();
 
             if classes_str.is_empty() {
-                println!("Error in relation syntax: Missing lines following class type definition");
-                break;
+                println!("Error in relation syntax near '{}': Missing lines following class type definition\nAborting...", classes_str);
+                exit(-1);
             }
 
             let mut classes_split = classes_str.split(",");
             let classes_split_list: Vec<&str> = classes_split.collect();
 
-            if *(classes_split_list.get(0).unwrap()) == classes_str{ // Invalid
-                println!("Error in relation syntax: Please enter two classnames seperated by a comma");
-                break;
+            if *(classes_split_list.get(0).unwrap()) == classes_str || classes_split_list.len() > 2{ // Invalid
+                println!("Error in relation syntax near '{}': Please enter two classnames seperated by a comma\nAborting...", classes_str);
+                exit(-1);
             }
 
 
@@ -115,8 +117,15 @@ fn parse_lines(lines: &mut Vec<String>, classes: &mut Vec<Class>, relations: &mu
             let mut opt_cards = lines.pop();
 
             if !opt_cards.is_some() {
-                println!("Error in relation syntax: Missing lines following class type definition");
-                break;
+                //println!("Error in relation syntax: Missing lines following class type definition3\nAborting...");
+                let mut from_card = "";
+                let mut to_card = "";
+
+                let mut relation: Relation = Relation {arrow_type, border_type: relation_border, from_class: String::from_str(*from_class_name).unwrap(), from_class_card: String::from_str(from_card).unwrap(), to_class: String::from_str(to_class_name).unwrap(), to_class_card: String::from_str(to_card).unwrap()};
+                println!("Full struct for relation: {:?}", relation);
+
+                relations.push(relation);
+                continue;
             }
 
             let mut opt_cards_str = opt_cards.unwrap();
@@ -124,9 +133,16 @@ fn parse_lines(lines: &mut Vec<String>, classes: &mut Vec<Class>, relations: &mu
 
             //println!("opt_cards_str: '{}'", opt_cards_str);
 
-            if opt_cards_str.is_empty() {
-                println!("Error in relation syntax: Missing lines following class type definition");
-                break;
+            if opt_cards_str.is_empty() { //No multiplicities given.
+                //println!("Error in relation syntax: Missing lines following class type definition4");
+                let mut from_card = "";
+                let mut to_card = "";
+
+                let mut relation: Relation = Relation {arrow_type, border_type: relation_border, from_class: String::from_str(*from_class_name).unwrap(), from_class_card: String::from_str(from_card).unwrap(), to_class: String::from_str(to_class_name).unwrap(), to_class_card: String::from_str(to_card).unwrap()};
+                println!("Full struct for relation: {:?}", relation);
+
+                relations.push(relation);
+                continue;
             }
 
 
@@ -170,6 +186,7 @@ fn parse_lines(lines: &mut Vec<String>, classes: &mut Vec<Class>, relations: &mu
              * Class Type
              */
             let mut class_type: ClassType = ClassType::None;
+            let mut class_stereotype: String = String::from("");
 
             let tmp_string: &str = split_list_lower.get(0).unwrap();
 
@@ -177,6 +194,7 @@ fn parse_lines(lines: &mut Vec<String>, classes: &mut Vec<Class>, relations: &mu
                 class_type = ClassType::SimpleClass;
             }else if tmp_string.starts_with("abstractclass"){
                 class_type = ClassType::AbstractClass;
+                class_stereotype = String::from("<<abstract>>");
             }else if tmp_string.starts_with("activeclass"){
                 class_type = ClassType::ActiveClass;
             }else if tmp_string.starts_with("varborderclass"){
@@ -204,21 +222,30 @@ fn parse_lines(lines: &mut Vec<String>, classes: &mut Vec<Class>, relations: &mu
 
             let mut line_stereo = opt_inner.unwrap();
 
-            if line_stereo.is_empty() {
-                println!("Error in class syntax: Missing lines following class type definition");
-                break;
+            if class_name.eq("MyList"){
+                println!("{}", line_stereo);
+            }
+
+            if line_stereo.is_empty() { //No line following the class_name
+                //println!("Error in class syntax: Missing lines following class type definition");
+                let mut content_lines: Vec<String> = Vec::new();
+                let mut content_decor: Vec<TextDecoration> = Vec::new();
+
+                let mut class: Class = Class {border_width: 0, class_name, class_type, content_lines, content_decor, class_stereotype};
+                println!("Full struct for class: {:?}", class);
+
+                classes.push(class);
+
+                continue;
             }
 
             //let mut line_stereo_before = String::from(line_stereo)
             //line_stereo.pop();
 
-            let mut class_stereotype: String;
-
-            if line_stereo.starts_with("<<") && line_stereo.ends_with(">>\r") {
+            if line_stereo.starts_with("<<") && line_stereo.ends_with(">>\r") && !class_stereotype.is_empty(){
                 line_stereo.pop();
                 class_stereotype = line_stereo;
             }else{
-                class_stereotype = String::from("");
                 lines.push(line_stereo);
             }
 
