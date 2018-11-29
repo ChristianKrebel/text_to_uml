@@ -33,16 +33,16 @@ public int fkt4()
 
 Class:lol
 --
-public a
-public a
-public a
-public a
-public a
-public a
+public int a
+public int a
+int a
+protected int a
+package int a
+private int a
 --
-public a
+public int a
 --
-public a
+public int a
 --
 --
 test
@@ -70,7 +70,7 @@ Inheritance
 Klasse1,Klasse2
 1,n
 
-Implementation
+Association
 Klasse2,Test
 1,n
 
@@ -78,10 +78,10 @@ Aggregation
 Klasse1,lol
 1,n
 
-Dependency
+Association
 Test,lol
 1,n
 
-Dependency
+Association
 Test,Klasse1
 1,n
