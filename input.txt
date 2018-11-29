@@ -22,7 +22,7 @@ public void setDone(boolean isDone)
 public int getCumulativePrice()
 public ArrayList<Item> getInhalt()
 
-Class:Item
+ActiveClass:Item
 --
 private String description
 private int singlePrice

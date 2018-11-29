@@ -54,15 +54,16 @@ pub struct General {
 }
 
 const LINE_HEIGHT: u32 = 30;
-const LETTER_WIDTH: u32 = 14;
+const LETTER_WIDTH: u32 = 16;
 const RELATION_GAP: u32 = 600;
-const PADDING_LEFT: u32 = 4;
+const PADDING_LEFT: u32 = 8;
 const PADDING_TOP: u32 = 2;
 const RELATION_STICK: u32 = RELATION_GAP / 8;
 const DASHED_LENGTH: u32 = 10;
 const DASHED_LENGTH2: u32 = DASHED_LENGTH * 5;
 const REL_GAP_DISTANCE: f32 = 20.0;
 const ARROW_SIZE: u32 = 20;
+const ACTIVE_PADDING: u32 = PADDING_LEFT * 2;
 
 pub fn generate_pic(class_vec: &mut Vec<Class>, rel_vec: &mut Vec<Relation>) {
     println!("{:?}", rel_vec);
@@ -617,7 +618,94 @@ pub fn draw_class(buffer: &mut image::RgbaImage, general: &General, fonts: &Vec<
             }
         }
         ClassType::ActiveClass => {
-            // TODO
+            // Outer borderline
+            draw_hollow_rect_mut(
+                buffer, imageproc::rect::Rect::at(
+                    class_layout.lt.x as i32, class_layout.lt.y as i32).of_size(
+                    class_layout.width, class_layout.height),
+                colors.black);
+            // Inner borderline
+            draw_hollow_rect_mut(
+                buffer, imageproc::rect::Rect::at(
+                    class_layout.lt.x as i32 + PADDING_LEFT as i32, class_layout.lt.y as i32).of_size(
+                    class_layout.width - ACTIVE_PADDING, class_layout.height),
+                colors.black);
+
+            let mut height_to_write_at: u32 = class_layout.lt.y + PADDING_TOP;
+            let mut has_stereotype: bool = if class.class_stereotype.is_empty() { false } else { true };
+            let mut is_abstract: bool = if class.class_stereotype == "<<abstract>>" { true } else { false };
+
+            // Draw name (and stereotype)
+            if class.class_type == ClassType::AbstractClass {
+                has_stereotype = true;
+                is_abstract = true;
+            }
+            if has_stereotype {
+                if is_abstract {
+                    draw_text_mut(
+                        buffer, colors.black, class_layout.lt.x + ACTIVE_PADDING,
+                        height_to_write_at, scales.two, &fonts[1], &class.class_name);
+                    height_to_write_at += LINE_HEIGHT;
+                } else {
+                    draw_text_mut(
+                        buffer, colors.black, class_layout.lt.x + ACTIVE_PADDING,
+                        height_to_write_at, scales.two, &fonts[0], &class.class_stereotype);
+                    height_to_write_at += LINE_HEIGHT;
+                    draw_text_mut(
+                        buffer, colors.black, class_layout.lt.x + ACTIVE_PADDING,
+                        height_to_write_at, scales.two, &fonts[0], &class.class_name);
+                    height_to_write_at += LINE_HEIGHT;
+                }
+            } else {
+                draw_text_mut(
+                    buffer, colors.black, class_layout.lt.x + ACTIVE_PADDING,
+                    height_to_write_at, scales.two, &fonts[0], &class.class_name);
+                height_to_write_at += LINE_HEIGHT;
+            }
+
+            // Draw all other lines of text or just lines
+            let mut deco_font: u32 = 0;
+            for (i, line) in class.content_lines.iter().enumerate() {
+                let mut is_horizontal_line: bool = false;
+                match class.content_decor[i] {
+                    TextDecoration::None => {
+                        println!("Textdeco: None");
+                    }
+                    TextDecoration::HorizontalLine => {
+                        println!("Textdeco: HorizontalLine");
+                        is_horizontal_line = true;
+                    }
+                    TextDecoration::Bold => {
+                        println!("Textdeco: Bold");
+                        deco_font = 2;
+                    }
+                    TextDecoration::Italic => {
+                        println!("Textdeco: Italic");
+                        deco_font = 1;
+                    }
+                    TextDecoration::BoldItalic => {
+                        println!("Textdeco: BoldItalic");
+                        deco_font = 3;
+                    }
+                    TextDecoration::Underlined => {
+                        println!("Textdeco: Underlined");
+                        // TODO
+                    }
+                }
+                if is_horizontal_line || line.is_empty() || line == "-" {
+                    draw_hollow_rect_mut(
+                        buffer, imageproc::rect::Rect::at(
+                            class_layout.lt.x as i32, class_layout.lt.y as i32).of_size(
+                            class_layout.width,
+                            height_to_write_at - class_layout.lt.y + (LINE_HEIGHT / 2)),
+                        colors.black);
+                } else {
+                    draw_text_mut(
+                        buffer, colors.black, class_layout.lt.x + ACTIVE_PADDING,
+                        height_to_write_at, scales.two, &fonts[deco_font as usize], &line);
+                }
+                height_to_write_at += LINE_HEIGHT;
+            }
         }
         ClassType::DashedBorderClass => {
         }
