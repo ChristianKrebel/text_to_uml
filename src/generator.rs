@@ -458,10 +458,15 @@ pub fn draw_class(buffer: &mut image::RgbaImage, general: &General, fonts: &Vec<
 
             let mut height_to_write_at: u32 = class_layout.lt.y + PADDING_TOP;
             let mut has_stereotype: bool = if class.class_stereotype.is_empty() { false } else { true };
+            let mut is_abstract: bool = if class.class_stereotype == "<<abstract>>" { true } else { false };
 
             // Draw name (and stereotype)
+            if class.class_type == ClassType::AbstractClass {
+                has_stereotype = true;
+                is_abstract = true;
+            }
             if has_stereotype {
-                if class.class_stereotype == "<<abstract>>" {
+                if is_abstract {
                     draw_text_mut(
                         buffer, colors.black, class_layout.lt.x + PADDING_LEFT,
                         height_to_write_at, scales.two, &fonts[1], &class.class_name);
@@ -528,7 +533,88 @@ pub fn draw_class(buffer: &mut image::RgbaImage, general: &General, fonts: &Vec<
             }
         }
         ClassType::AbstractClass => {
-            // TODO
+            // Outer borderline
+            draw_hollow_rect_mut(
+                buffer, imageproc::rect::Rect::at(
+                    class_layout.lt.x as i32, class_layout.lt.y as i32).of_size(
+                    class_layout.width, class_layout.height),
+                colors.black);
+
+            let mut height_to_write_at: u32 = class_layout.lt.y + PADDING_TOP;
+            let mut has_stereotype: bool = if class.class_stereotype.is_empty() { false } else { true };
+            let mut is_abstract: bool = if class.class_stereotype == "<<abstract>>" { true } else { false };
+
+            // Draw name (and stereotype)
+            if class.class_type == ClassType::AbstractClass {
+                has_stereotype = true;
+                is_abstract = true;
+            }
+            if has_stereotype {
+                if is_abstract {
+                    draw_text_mut(
+                        buffer, colors.black, class_layout.lt.x + PADDING_LEFT,
+                        height_to_write_at, scales.two, &fonts[1], &class.class_name);
+                    height_to_write_at += LINE_HEIGHT;
+                } else {
+                    draw_text_mut(
+                        buffer, colors.black, class_layout.lt.x + PADDING_LEFT,
+                        height_to_write_at, scales.two, &fonts[0], &class.class_stereotype);
+                    height_to_write_at += LINE_HEIGHT;
+                    draw_text_mut(
+                        buffer, colors.black, class_layout.lt.x + PADDING_LEFT,
+                        height_to_write_at, scales.two, &fonts[0], &class.class_name);
+                    height_to_write_at += LINE_HEIGHT;
+                }
+            } else {
+                draw_text_mut(
+                    buffer, colors.black, class_layout.lt.x + PADDING_LEFT,
+                    height_to_write_at, scales.two, &fonts[0], &class.class_name);
+                height_to_write_at += LINE_HEIGHT;
+            }
+
+            // Draw all other lines of text or just lines
+            let mut deco_font: u32 = 0;
+            for (i, line) in class.content_lines.iter().enumerate() {
+                let mut is_horizontal_line: bool = false;
+                match class.content_decor[i] {
+                    TextDecoration::None => {
+                        println!("Textdeco: None");
+                    }
+                    TextDecoration::HorizontalLine => {
+                        println!("Textdeco: HorizontalLine");
+                        is_horizontal_line = true;
+                    }
+                    TextDecoration::Bold => {
+                        println!("Textdeco: Bold");
+                        deco_font = 2;
+                    }
+                    TextDecoration::Italic => {
+                        println!("Textdeco: Italic");
+                        deco_font = 1;
+                    }
+                    TextDecoration::BoldItalic => {
+                        println!("Textdeco: BoldItalic");
+                        deco_font = 3;
+                    }
+                    TextDecoration::Underlined => {
+                        println!("Textdeco: Underlined");
+                        // TODO
+                    }
+                }
+                if is_horizontal_line || line.is_empty() || line == "-" {
+                    draw_hollow_rect_mut(
+                        buffer, imageproc::rect::Rect::at(
+                            class_layout.lt.x as i32, class_layout.lt.y as i32).of_size(
+                            class_layout.width,
+                            height_to_write_at - class_layout.lt.y + (LINE_HEIGHT / 2)),
+                        colors.black);
+                } else {
+                    draw_text_mut(
+                        buffer, colors.black, class_layout.lt.x + PADDING_LEFT,
+                        height_to_write_at, scales.two, &fonts[deco_font as usize], &line);
+                }
+                height_to_write_at += LINE_HEIGHT;
+            }
         }
         ClassType::ActiveClass => {
             // TODO

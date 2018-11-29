@@ -23,6 +23,7 @@ public int getCumulativePrice()
 public ArrayList<Item> getInhalt()
 
 Class:Item
+--
 private String description
 private int singlePrice
 private int countInStock
@@ -47,6 +48,7 @@ Association
 Angestellter,Auftrag
 0..n,1
 
+Aggregation
 Item,Auftrag
 1,1..n
 
