@@ -38,7 +38,7 @@ Aggregation
 Angestellter,Person
 1,1
 
-Association
+Inheritance
 Person,Item
 1,1
 
@@ -54,6 +54,6 @@ Implementation
 MyList,List
 1,1..n
 
-Aggregation
+Inheritance
 Auftrag,MyList
 1,1..n

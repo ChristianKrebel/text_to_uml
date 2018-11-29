@@ -659,16 +659,32 @@ pub fn draw_rel(buffer: &mut image::RgbaImage, general: &General, fonts: &Vec<Fo
             }
         }
         RelationArrow::None => {
-
+            // Done
         }
     }
 
     // Lines
     match rel.border_type {
         BorderType::Solid => {
+            let mut starty = start.y;
+            let mut endy = end.y;
             // Little line / stick
+            if rel.arrow_type == RelationArrow::DiamondEmpty {
+                if is_in_first {
+                    starty += (ARROW_SIZE*2);
+                } else {
+                    starty -= (ARROW_SIZE*2);
+                }
+            };
+            if rel.arrow_type == RelationArrow::TriangleEmpty {
+                if end.y == base_first {
+                    endy += ARROW_SIZE;
+                } else {
+                    endy -= ARROW_SIZE;
+                }
+            };
             draw_line_segment_mut(buffer,
-                                  (start.x as f32, start.y as f32),
+                                  (start.x as f32, starty as f32),
                                   (start.x as f32, start_rel_y as f32 + (
                                       if is_in_first { rel_gap_first } else { -rel_gap_second })),
                                   general.colors.black);
@@ -682,7 +698,7 @@ pub fn draw_rel(buffer: &mut image::RgbaImage, general: &General, fonts: &Vec<Fo
             draw_line_segment_mut(buffer,
                                   (end.x as f32, start_rel_y as f32 + (
                                       if is_in_first { rel_gap_first } else { -rel_gap_second })),
-                                  (end.x as f32, end.y as f32),
+                                  (end.x as f32, endy as f32),
                                   general.colors.black);
             if is_in_first {
                 rel_gap_first += REL_GAP_DISTANCE;
