@@ -1,87 +1,59 @@
-Class:Klasse1
-<<abstract>>
---
-public String name
+Class:Person
 private String name
+private String vorname
 --
-package static void main()
-public String name()
+public String getFullName()
 
-Class:Klasse2
+Class:Angestellter
+private static int ID
+private String position
+--
+public Auftrag auftragErstellen()
+public void auftragBearbeiten()
+
+Class:Auftrag
+private MyList<Item> inhalt
+private boolean done
+--
+public void setDone(boolean isDone)
+public int getCumulativePrice()
+public ArrayList<Item> getInhalt()
+
+Class:Item
+private String description
+private int singlePrice
+private int countInStock
+--
+public String getDescription()
+public int getSinglePrice()
+public int getCountInStock()
+public void changeCountInStock(int amount)
+
+Class:MyList
+
+Class:List
 <<interface>>
---
-public boolean fkt1()
-public int fkt2()
-public String fkt3sssdasdasd()
-package int fkt4()
-public static int fkt4()
-public int fkt4()
-public int fkt4()
-public int fkt4()
-public int fkt4()
-public int fkt4()
-
-Class:MMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM
-<<abstract>>
---
-public boolean fkt1()
-public int fkt2()
-public String fkt3sssdasdasdsdasdasdasdassadasdasdasd()
-public int fkt4()
-public int fkt4()
-public int fkt4()
-
-Class:lol
---
-public int a
-public int a
-int a
-protected int a
-package int a
-private int a
---
-public int a
---
-public int a
---
---
-test
---
-la
-
-Class:Test
---
-private String jap
---
-
-Association
-Klasse2,Klasse1
-n,n
-
-Association
-Klasse1,MMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM
-1,n
-
-Dependency
-Klasse2,Klasse1
-1,n
-
-Inheritance
-Klasse1,Klasse2
-1,n
-
-Association
-Klasse2,Test
-1,n
 
 Aggregation
-Klasse1,lol
-1,n
+Angestellter,Person
+1,1
 
 Association
-Test,lol
-1,n
+Person,Item
+1,1
 
 Association
-Test,Klasse1
-1,n
+Angestellter,Auftrag
+0..n,1
+
+Composition
+Item,Auftrag
+1,1..n
+
+Implementation
+MyList,List
+1,1..n
+
+Aggregation
+Auftrag,MyList
+1,1..n

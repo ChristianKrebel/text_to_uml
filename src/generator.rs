@@ -55,13 +55,14 @@ pub struct General {
 
 const LINE_HEIGHT: u32 = 30;
 const LETTER_WIDTH: u32 = 14;
-const RELATION_GAP: u32 = 400;
+const RELATION_GAP: u32 = 600;
 const PADDING_LEFT: u32 = 4;
 const PADDING_TOP: u32 = 2;
 const RELATION_STICK: u32 = RELATION_GAP / 8;
 const DASHED_LENGTH: u32 = 10;
 const DASHED_LENGTH2: u32 = DASHED_LENGTH * 5;
-const REL_GAP_DISTANCE: f32 = 12.0;
+const REL_GAP_DISTANCE: f32 = 20.0;
+const ARROW_SIZE: u32 = 20;
 
 pub fn generate_pic(class_vec: &mut Vec<Class>, rel_vec: &mut Vec<Relation>) {
     println!("{:?}", rel_vec);
@@ -555,26 +556,107 @@ pub fn draw_rel(buffer: &mut image::RgbaImage, general: &General, fonts: &Vec<Fo
     // Arrows
     match rel.arrow_type {
         RelationArrow::Arrow => {
-            if is_in_first {
-                let mut leftx: u32;
-                let mut lefty: u32;
-                let mut rightx: u32;
-                let mut righty: u32;
+            if end.y == base_first {
+                draw_line_segment_mut(buffer,
+                                      (end.x as f32 - ARROW_SIZE as f32, end.y as f32 + ARROW_SIZE as f32),
+                                      (end.x as f32, end.y as f32),
+                                      general.colors.black);
+                draw_line_segment_mut(buffer,
+                                      (end.x as f32 + ARROW_SIZE as f32, end.y as f32 + ARROW_SIZE as f32),
+                                      (end.x as f32, end.y as f32),
+                                      general.colors.black);
             } else {
-                let mut leftx: u32;
-                let mut lefty: u32;
-                let mut rightx: u32;
-                let mut righty: u32;
+                draw_line_segment_mut(buffer,
+                                      (end.x as f32 - ARROW_SIZE as f32, end.y as f32 - ARROW_SIZE as f32),
+                                      (end.x as f32, end.y as f32),
+                                      general.colors.black);
+                draw_line_segment_mut(buffer,
+                                      (end.x as f32 + ARROW_SIZE as f32, end.y as f32 - ARROW_SIZE as f32),
+                                      (end.x as f32, end.y as f32),
+                                      general.colors.black);
             }
+
         }
         RelationArrow::TriangleEmpty => {
-
+            if end.y == base_first {
+                draw_line_segment_mut(buffer,
+                                      (end.x as f32 - ARROW_SIZE as f32, end.y as f32 + ARROW_SIZE as f32),
+                                      (end.x as f32, end.y as f32),
+                                      general.colors.black);
+                draw_line_segment_mut(buffer,
+                                      (end.x as f32 + ARROW_SIZE as f32, end.y as f32 + ARROW_SIZE as f32),
+                                      (end.x as f32, end.y as f32),
+                                      general.colors.black);
+                draw_line_segment_mut(buffer,
+                                      (end.x as f32 + ARROW_SIZE as f32, end.y as f32 + ARROW_SIZE as f32),
+                                      (end.x as f32 - ARROW_SIZE as f32, end.y as f32 + ARROW_SIZE as f32),
+                                      general.colors.black);
+            } else {
+                draw_line_segment_mut(buffer,
+                                      (end.x as f32 - ARROW_SIZE as f32, end.y as f32 - ARROW_SIZE as f32),
+                                      (end.x as f32, end.y as f32),
+                                      general.colors.black);
+                draw_line_segment_mut(buffer,
+                                      (end.x as f32 + ARROW_SIZE as f32, end.y as f32 - ARROW_SIZE as f32),
+                                      (end.x as f32, end.y as f32),
+                                      general.colors.black);
+                draw_line_segment_mut(buffer,
+                                      (end.x as f32 + ARROW_SIZE as f32, end.y as f32 - ARROW_SIZE as f32),
+                                      (end.x as f32 - ARROW_SIZE as f32, end.y as f32 - ARROW_SIZE as f32),
+                                      general.colors.black);
+            }
         }
         RelationArrow::DiamondEmpty => {
-
+            if is_in_first {
+                draw_line_segment_mut(buffer,
+                                      (start.x as f32 - ARROW_SIZE as f32, start.y as f32 + ARROW_SIZE as f32),
+                                      (start.x as f32, start.y as f32),
+                                      general.colors.black);
+                draw_line_segment_mut(buffer,
+                                      (start.x as f32 + ARROW_SIZE as f32, start.y as f32 + ARROW_SIZE as f32),
+                                      (start.x as f32, start.y as f32),
+                                      general.colors.black);
+                draw_line_segment_mut(buffer,
+                                      (start.x as f32 - ARROW_SIZE as f32, start.y as f32 + ARROW_SIZE as f32),
+                                      (start.x as f32, start.y as f32 + (ARROW_SIZE*2) as f32),
+                                      general.colors.black);
+                draw_line_segment_mut(buffer,
+                                      (start.x as f32 + ARROW_SIZE as f32, start.y as f32 + ARROW_SIZE as f32),
+                                      (start.x as f32, (start.y + ARROW_SIZE * 2) as f32),
+                                      general.colors.black);
+            } else {
+                draw_line_segment_mut(buffer,
+                                      (start.x as f32 - ARROW_SIZE as f32, start.y as f32 - ARROW_SIZE as f32),
+                                      (start.x as f32, start.y as f32),
+                                      general.colors.black);
+                draw_line_segment_mut(buffer,
+                                      (start.x as f32 + ARROW_SIZE as f32, start.y as f32 - ARROW_SIZE as f32),
+                                      (start.x as f32, start.y as f32),
+                                      general.colors.black);
+                draw_line_segment_mut(buffer,
+                                      (start.x as f32 - ARROW_SIZE as f32, start.y as f32 - ARROW_SIZE as f32),
+                                      (start.x as f32, start.y as f32 - (ARROW_SIZE*2) as f32),
+                                      general.colors.black);
+                draw_line_segment_mut(buffer,
+                                      (start.x as f32 + ARROW_SIZE as f32, start.y as f32 - ARROW_SIZE as f32),
+                                      (start.x as f32, (start.y - ARROW_SIZE * 2) as f32),
+                                      general.colors.black);
+            }
         }
         RelationArrow::DiamondFilled => {
-
+            if is_in_first {
+                let mut p1: Point<i32> = Point::new(start.x as i32, start.y as i32);
+                let mut p2: Point<i32> = Point::new(start.x as i32 - ARROW_SIZE as i32, start.y as i32 + ARROW_SIZE as i32);
+                let mut p3: Point<i32> = Point::new(start.x as i32, start.y as i32 + (ARROW_SIZE * 2) as i32);
+                let mut p4: Point<i32> = Point::new(start.x as i32 + ARROW_SIZE as i32, start.y as i32 + ARROW_SIZE as i32);
+                draw_convex_polygon_mut(buffer, &[p1, p2, p3, p4], general.colors.black);
+            } else {
+                let mut p1: Point<i32> = Point::new(start.x as i32, start.y as i32);
+                let mut p2: Point<i32> = Point::new(start.x as i32 - ARROW_SIZE as i32, start.y as i32 - ARROW_SIZE as i32);
+                let mut p3: Point<i32> = Point::new(start.x as i32, start.y as i32 - (ARROW_SIZE * 2) as i32);
+                let mut p4: Point<i32> = Point::new(start.x as i32 + ARROW_SIZE as i32, start.y as i32 - ARROW_SIZE as i32);
+                draw_convex_polygon_mut(buffer, &[p1, p2, p3, p4], general.colors.black);
+            }
         }
         RelationArrow::None => {
 
@@ -610,6 +692,73 @@ pub fn draw_rel(buffer: &mut image::RgbaImage, general: &General, fonts: &Vec<Fo
         }
         BorderType::Dashed => {
             let mut start_y_temp = start.y as f32;
+            let mut start_x_temp = start.x as f32;
+            // Little line / stick
+            if is_in_first {
+                while start_y_temp < start_rel_y + rel_gap_first {
+                    // Little line / stick
+                    draw_line_segment_mut(buffer,
+                                          (start.x as f32, start_y_temp as f32),
+                                          (start.x as f32, (start_y_temp + DASHED_LENGTH as f32) as f32),
+                                          general.colors.black);
+                    start_y_temp += DASHED_LENGTH as f32 * 2.0;
+                }
+                while start_y_temp < end.y as f32 {
+                    draw_line_segment_mut(buffer,
+                                          (end.x as f32, start_y_temp as f32 + (
+                                              if is_in_first { rel_gap_first } else { -rel_gap_second })),
+                                          (end.x as f32, start_y_temp as f32),
+                                          general.colors.black);
+                    start_y_temp += DASHED_LENGTH as f32 * 2.0;
+                }
+                rel_gap_first += REL_GAP_DISTANCE;
+            } else {
+                while start_y_temp > start_rel_y - rel_gap_first {
+                    // Little line / stick
+                    draw_line_segment_mut(buffer,
+                                          (start.x as f32, start_y_temp as f32),
+                                          (start.x as f32, (start_y_temp - DASHED_LENGTH as f32) as f32),
+                                          general.colors.black);
+                    start_y_temp -= DASHED_LENGTH as f32 * 2.0;
+                }
+                while start_y_temp > end.y as f32 {
+                    draw_line_segment_mut(buffer,
+                                          (end.x as f32, start_y_temp as f32 - (
+                                              if is_in_first { rel_gap_first } else { -rel_gap_second })),
+                                          (end.x as f32, start_y_temp as f32),
+                                          general.colors.black);
+                    start_y_temp -= DASHED_LENGTH as f32 * 2.0;
+                }
+                rel_gap_first += REL_GAP_DISTANCE;
+            }
+
+            // Middle line
+            if start.x < end.x {
+                while start_x_temp < end.x as f32 {
+                    draw_line_segment_mut(buffer,
+                                          (start_x_temp as f32, start_rel_y as f32 + (
+                                              if is_in_first { rel_gap_first } else { -rel_gap_second })),
+                                          ((start_x_temp + DASHED_LENGTH as f32) as f32, start_rel_y as f32 + (
+                                              if is_in_first { rel_gap_first } else { -rel_gap_second })),
+                                          general.colors.black);
+                    start_x_temp += DASHED_LENGTH as f32 * 2.0;
+                }
+            } else {
+                while start_x_temp > end.x as f32 {
+                    draw_line_segment_mut(buffer,
+                                          (start_x_temp as f32, start_rel_y as f32 + (
+                                              if is_in_first { rel_gap_first } else { -rel_gap_second })),
+                                          ((start_x_temp - DASHED_LENGTH as f32) as f32, start_rel_y as f32 + (
+                                              if is_in_first { rel_gap_first } else { -rel_gap_second })),
+                                          general.colors.black);
+                    start_x_temp -= DASHED_LENGTH as f32 * 2.0;
+                }
+            }
+
+
+
+
+            /*let mut start_y_temp = start.y as f32;
             // Little line / stick
             if is_in_first {
                 while start_y_temp < start_rel_y {
@@ -665,7 +814,7 @@ pub fn draw_rel(buffer: &mut image::RgbaImage, general: &General, fonts: &Vec<Fo
                     start_x_temp -= step_x * 2.0 as f32;
                     start_y_temp -= step_y * 2.0 as f32;
                 }
-            }
+            }*/
 
 
         }
