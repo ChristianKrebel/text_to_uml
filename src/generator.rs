@@ -826,15 +826,15 @@ pub fn draw_rel(buffer: &mut image::RgbaImage, general: &General, fonts: &Vec<Fo
             if !rel.from_class_card.is_empty() {
                 draw_text_mut(
                     buffer, general.colors.black, start.x as u32 + CARD_DIST as u32,
-                    start_rel_y as u32 + (
-                        if is_in_first { rel_gap_first } else { -rel_gap_second }) as u32 + CARD_DIST as u32,
+                    (start_rel_y +
+                        if is_in_first { rel_gap_first } else { -rel_gap_second } + CARD_DIST as f32) as u32,
                     general.scales.one, &fonts[0], &rel.from_class_card);
             }
             if !rel.to_class_card.is_empty() {
                 draw_text_mut(
                     buffer, general.colors.black, end.x as u32 + CARD_DIST as u32,
-                    start_rel_y as u32 + (
-                        if is_in_first { rel_gap_first } else { -rel_gap_second }) as u32 + CARD_DIST as u32,
+                    (start_rel_y +
+                        if is_in_first { rel_gap_first } else { -rel_gap_second } + CARD_DIST as f32) as u32,
                     general.scales.one, &fonts[0], &rel.to_class_card);
             }
             // Big lines
