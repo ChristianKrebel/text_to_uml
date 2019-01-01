@@ -60,7 +60,7 @@ const RELATION_GAP: u32 = 600;
 const PADDING_LEFT: u32 = 8;
 const PADDING_TOP: u32 = 2;
 const RELATION_STICK: u32 = RELATION_GAP / 8;
-const DASHED_LENGTH: u32 = 10;
+const DASHED_LENGTH: u32 = 5;
 const DASHED_LENGTH2: u32 = DASHED_LENGTH * 5;
 const REL_GAP_DISTANCE: f32 = 20.0;
 const ARROW_SIZE: u32 = 20;
@@ -856,7 +856,15 @@ pub fn draw_rel(buffer: &mut image::RgbaImage, general: &General, fonts: &Vec<Fo
             }
         }
         BorderType::Dashed => {
-            //let mut start_rel_y = Wrapping(start_rel_y);
+            let mut endy = end.y;
+            if rel.arrow_type == RelationArrow::TriangleEmpty {
+                if end.y == base_first {
+                    endy += ARROW_SIZE;
+                } else {
+                    endy -= ARROW_SIZE;
+                }
+            };
+
             let mut start_y_temp = start.y as f32;
             let mut start_x_temp = start.x as f32;
             // Card. / multiplicities
@@ -875,27 +883,21 @@ pub fn draw_rel(buffer: &mut image::RgbaImage, general: &General, fonts: &Vec<Fo
                         if is_in_first { rel_gap_first } else { -rel_gap_second }) as u32 + CARD_DIST as u32,
                     general.scales.one, &fonts[0], &rel.to_class_card);
             }*/
-            // Little line / stick
+            // Little line / stick (FIRST)
             if is_in_first {
-                while start_y_temp < start_rel_y + rel_gap_first {
+                println!("start.y: {}", start.y);
+                while (start_y_temp + DASHED_LENGTH as f32) <= start_rel_y + rel_gap_first {
                     // Little line / stick
+                    println!("start_y_temp + DASHED_LENGTH: {}, start_rel_y + rel_gap_first: {}", start_y_temp + DASHED_LENGTH as f32, start_rel_y + rel_gap_first);
                     draw_line_segment_mut(buffer,
                                           (start.x as f32, start_y_temp as f32),
                                           (start.x as f32, (start_y_temp + DASHED_LENGTH as f32) as f32),
                                           general.colors.black);
-                    start_y_temp += DASHED_LENGTH as f32 * 2.0;
+                    start_y_temp += DASHED_LENGTH as f32 * (if (start_y_temp + DASHED_LENGTH as f32) < start_rel_y + rel_gap_first { 2.0 } else { 1.0 });
                 }
-                while start_y_temp < end.y as f32 {
-                    draw_line_segment_mut(buffer,
-                                          (end.x as f32, start_y_temp as f32 + (
-                                              if is_in_first { rel_gap_first } else { -rel_gap_second })),
-                                          (end.x as f32, start_y_temp as f32),
-                                          general.colors.black);
-                    start_y_temp += DASHED_LENGTH as f32 * 2.0;
-                }
-                rel_gap_first += REL_GAP_DISTANCE;
+
             } else {
-                while start_y_temp > start_rel_y - rel_gap_first {
+                while (start_y_temp - DASHED_LENGTH as f32) >= start_rel_y - rel_gap_second {
                     // Little line / stick
                     draw_line_segment_mut(buffer,
                                           (start.x as f32, start_y_temp as f32),
@@ -903,20 +905,12 @@ pub fn draw_rel(buffer: &mut image::RgbaImage, general: &General, fonts: &Vec<Fo
                                           general.colors.black);
                     start_y_temp -= DASHED_LENGTH as f32 * 2.0;
                 }
-                while start_y_temp > end.y as f32 {
-                    draw_line_segment_mut(buffer,
-                                          (end.x as f32, start_y_temp as f32 - (
-                                              if is_in_first { rel_gap_first } else { -rel_gap_second })),
-                                          (end.x as f32, start_y_temp as f32),
-                                          general.colors.black);
-                    start_y_temp -= DASHED_LENGTH as f32 * 2.0;
-                }
-                rel_gap_first += REL_GAP_DISTANCE;
+
             }
 
             // Middle line
             if start.x < end.x {
-                while start_x_temp < end.x as f32 {
+                while (start_x_temp + DASHED_LENGTH as f32) <= end.x as f32 {
                     draw_line_segment_mut(buffer,
                                           (start_x_temp as f32, start_rel_y as f32 + (
                                               if is_in_first { rel_gap_first } else { -rel_gap_second })),
@@ -926,7 +920,7 @@ pub fn draw_rel(buffer: &mut image::RgbaImage, general: &General, fonts: &Vec<Fo
                     start_x_temp += DASHED_LENGTH as f32 * 2.0;
                 }
             } else {
-                while start_x_temp > end.x as f32 {
+                while (start_x_temp - DASHED_LENGTH as f32) >= end.x as f32 {
                     draw_line_segment_mut(buffer,
                                           (start_x_temp as f32, start_rel_y as f32 + (
                                               if is_in_first { rel_gap_first } else { -rel_gap_second })),
@@ -937,68 +931,30 @@ pub fn draw_rel(buffer: &mut image::RgbaImage, general: &General, fonts: &Vec<Fo
                 }
             }
 
-
-
-
-            /*let mut start_y_temp = start.y as f32;
-            // Little line / stick
-            if is_in_first {
-                while start_y_temp < start_rel_y {
-                    println!("while1");
+            // Little line / stick (SECOND)
+            if end.y == base_first {
+                while (start_y_temp - DASHED_LENGTH as f32) >= endy as f32 {
                     draw_line_segment_mut(buffer,
-                                          (start.x as f32, start_y_temp as f32),
-                                          (start.x as f32, (start_y_temp + DASHED_LENGTH as f32) as f32),
+                                          (end.x as f32, start_y_temp as f32),
+                                          (end.x as f32, (start_y_temp - DASHED_LENGTH as f32) as f32),
                                           general.colors.black);
-                    start_y_temp += DASHED_LENGTH as f32 *2.0;
-                }
-                // Big line
-                // Try Vector: AB=OB-OA  :  start-end
-                let mut step_x = -(start.x as f32 - end.x as f32);
-                let mut step_y = -(start_rel_y as f32 - end.y as f32);
-                println!("VECTOR x: {}, y: {}", step_x, step_y);
-                step_x /= DASHED_LENGTH2 as f32;
-                step_y /= DASHED_LENGTH2 as f32;
-                start_y_temp = start_rel_y;
-                let mut start_x_temp = start.x as f32;
-                while start_y_temp < end.y as f32 - step_y as f32 {
-                    println!("while2");
-                    draw_line_segment_mut(buffer,
-                                          (start_x_temp as f32, start_y_temp as f32),
-                                          ((start_x_temp as f32  + step_x) as f32, (start_y_temp as f32 + step_y) as f32),
-                                          general.colors.black);
-                    start_x_temp += step_x*2.0 as f32;
-                    start_y_temp += step_y*2.0 as f32;
+                    start_y_temp -= DASHED_LENGTH as f32 * 2.0;
                 }
             } else {
-                while start_y_temp > start_rel_y {
-                    println!("while1");
+                while (start_y_temp + DASHED_LENGTH as f32) <= endy as f32 {
                     draw_line_segment_mut(buffer,
-                                          (start.x as f32, start_y_temp as f32),
-                                          (start.x as f32, (start_y_temp - DASHED_LENGTH as f32) as f32),
+                                          (end.x as f32, start_y_temp as f32),
+                                          (end.x as f32, (start_y_temp + DASHED_LENGTH as f32) as f32),
                                           general.colors.black);
-                    start_y_temp -= DASHED_LENGTH as f32 *2.0;
+                    start_y_temp += DASHED_LENGTH as f32 * 2.0;
                 }
-                // Big line
-                // Try Vector: AB=OB-OA  :  start-end
-                let mut step_x = (start.x as f32 - end.x as f32);
-                let mut step_y = (start_rel_y as f32 - end.y as f32);
-                println!("VECTOR2 x: {}, y: {}", step_x, step_y);
-                step_x /= DASHED_LENGTH2 as f32;
-                step_y /= DASHED_LENGTH2 as f32;
-                start_y_temp = start_rel_y;
-                let mut start_x_temp = start.x as f32;
-                while start_y_temp > end.y as f32 {
-                    println!("while2:: start_y_temp: {}, {}", start_y_temp, end.y);
-                    draw_line_segment_mut(buffer,
-                                          (start_x_temp as f32, start_y_temp as f32),
-                                          ((start_x_temp as f32 + step_x) as f32, (start_y_temp as f32 + step_y) as f32),
-                                          general.colors.black);
-                    start_x_temp -= step_x * 2.0 as f32;
-                    start_y_temp -= step_y * 2.0 as f32;
-                }
-            }*/
+            }
 
-
+            if is_in_first {
+                rel_gap_first += REL_GAP_DISTANCE;
+            } else {
+                rel_gap_second += REL_GAP_DISTANCE;
+            }
         }
         BorderType::None => {
 
