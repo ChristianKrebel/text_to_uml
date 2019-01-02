@@ -40,21 +40,37 @@ Class:List
 <<interface>>
 --
 
-Inheritance
-Angestellter,Person
+ActiveClass:Test
+--
+protected String String
+private int number
+--
+package String getString()
+private int getInt()
+private void print()
+
+Dependency
+Person,Auftrag
 1,1
 
+Implementation
+Item,Person
+
 Association
-Angestellter,Auftrag
-0..n,1
+MyList,Angestellter
+1,1
+
+Inheritance
+Item,Test
+n,1
 
 Aggregation
-Item,Auftrag
+Person,Auftrag
 1,1..n
 
-Implementation
-MyList,List
-1,1..n
+Composition
+Angestellter,Item
+1..n,1..n
 
 Implementation
-Auftrag,MyList
+Test,Angestellter

@@ -56,13 +56,12 @@ pub struct General {
 
 const LINE_HEIGHT: u32 = 30;
 const LETTER_WIDTH: u32 = 16;
-const RELATION_GAP: u32 = 600;
 const PADDING_LEFT: u32 = 8;
 const PADDING_TOP: u32 = 2;
-const RELATION_STICK: u32 = RELATION_GAP / 8;
+const RELATION_STICK: u32 = 50;
 const DASHED_LENGTH: u32 = 5;
 const DASHED_LENGTH2: u32 = DASHED_LENGTH * 5;
-const REL_GAP_DISTANCE: f32 = 20.0;
+const REL_GAP_DISTANCE: f32 = 25.0;
 const ARROW_SIZE: u32 = 20;
 const ACTIVE_PADDING: u32 = PADDING_LEFT * 2;
 const CARD_DIST: u32 = 4;
@@ -73,6 +72,9 @@ pub fn generate_pic(class_vec: &mut Vec<Class>, rel_vec: &mut Vec<Relation>) {
     // ------ Layouting all classes ------
     let mut class_layout_vec: Vec<ClassLayout> = Vec::new();
     let mut class_count = class_vec.len();
+
+    // calc distance between upper and lower classes
+    let RELATION_GAP: u32 = ((RELATION_STICK * 2) as f32 + (rel_vec.len() as f32 + 1.0) * REL_GAP_DISTANCE) as u32;
 
     // calc heights for upper half of classes (uneven)
     let mut greatest_height_first_half: u32 = 0;
