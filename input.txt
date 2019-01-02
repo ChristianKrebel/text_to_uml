@@ -1,6 +1,6 @@
 AbstractClass:Person
 --
-protected String name
+protected static String name
 protected String vorname
 --
 public String getFullName()
@@ -19,16 +19,17 @@ private MyList<Item> inhalt
 private boolean done
 --
 public void setDone(boolean isDone)
-public int getCumulativePrice()
-public ArrayList<Item> getInhalt()
+public static int getCumulativePrice()
+public abstract ArrayList<Item> getInhalt()
 
-Class:Item
+ActiveClass:Item
+--
 private String description
-private int singlePrice
-private int countInStock
+private static int singlePrice
+private abstract int countInStock
 --
 public String getDescription()
-public int getSinglePrice()
+public static int getSinglePrice()
 public int getCountInStock()
 public void changeCountInStock(int amount)
 
@@ -39,20 +40,37 @@ Class:List
 <<interface>>
 --
 
-Inheritance
-Angestellter,Person
+ActiveClass:Test
+--
+protected String String
+private int number
+--
+package String getString()
+private int getInt()
+private void print()
+
+Dependency
+Person,Auftrag
 1,1
 
+Implementation
+Item,Person
+
 Association
-Angestellter,Auftrag
-0..n,1
+MyList,Angestellter
+1,1
+
+Inheritance
+Item,Test
+n,1
 
 Aggregation
-Item,Auftrag
+Person,Auftrag
 1,1..n
 
-Implementation
-MyList,List
+Composition
+Angestellter,Item
+1..n,1..n
 
-Association
-Auftrag,MyList
+Implementation
+Test,Angestellter

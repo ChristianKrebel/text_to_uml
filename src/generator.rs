@@ -18,6 +18,7 @@ use std::ptr::null;
 use std::str::*;
 use std::string::*;
 use std::mem;
+use std::num::Wrapping;
 use self::rand::Rng;
 
 use self::image::{DynamicImage, GenericImage, Pixel, Rgba, RgbaImage, ImageFormat};
@@ -30,12 +31,6 @@ pub struct ClassLayout {
     height: u32,
     width: u32,
     uneven: bool
-}
-
-pub struct RelationLayout {
-    rel: Relation,
-    start: XY,
-    end: XY
 }
 
 struct Colors {
@@ -60,21 +55,26 @@ pub struct General {
 }
 
 const LINE_HEIGHT: u32 = 30;
-const LETTER_WIDTH: u32 = 14;
-const RELATION_GAP: u32 = 400;
-const PADDING_LEFT: u32 = 4;
+const LETTER_WIDTH: u32 = 16;
+const PADDING_LEFT: u32 = 8;
 const PADDING_TOP: u32 = 2;
-const RELATION_STICK: u32 = RELATION_GAP / 8;
-const DASHED_LENGTH: u32 = 10;
+const RELATION_STICK: u32 = 50;
+const DASHED_LENGTH: u32 = 5;
 const DASHED_LENGTH2: u32 = DASHED_LENGTH * 5;
+const REL_GAP_DISTANCE: f32 = 25.0;
+const ARROW_SIZE: u32 = 20;
+const ACTIVE_PADDING: u32 = PADDING_LEFT * 2;
+const CARD_DIST: u32 = 4;
 
 pub fn generate_pic(class_vec: &mut Vec<Class>, rel_vec: &mut Vec<Relation>) {
-    println!("{:?}", rel_vec);
     let path = Path::new("output.png");
 
     // ------ Layouting all classes ------
     let mut class_layout_vec: Vec<ClassLayout> = Vec::new();
     let mut class_count = class_vec.len();
+
+    // calc distance between upper and lower classes
+    let RELATION_GAP: u32 = ((RELATION_STICK * 2) as f32 + (rel_vec.len() as f32 + 1.0) * REL_GAP_DISTANCE) as u32;
 
     // calc heights for upper half of classes (uneven)
     let mut greatest_height_first_half: u32 = 0;
@@ -118,15 +118,12 @@ pub fn generate_pic(class_vec: &mut Vec<Class>, rel_vec: &mut Vec<Relation>) {
     let mut top_line_second_half: u32 = if class_count == 1
         {base_line_first_half} else {base_line_first_half + RELATION_GAP};
 
-    /*println!("{}", greatest_height_first_half);
-    println!("{}", greatest_height_second_half);*/
 
     let mut last_left_distance_uneven: u32 = 50;
     let mut last_left_distance_even: u32 = 50;
 
     for (i,c) in class_vec.iter().enumerate() {
-        println!("LLDU: {}", last_left_distance_uneven);
-        println!("LLDE: {}", last_left_distance_even);
+
         let mut greatest_width: u32 = 0;
         for line in c.content_lines.iter() {
             if line.len() as u32 > greatest_width {
@@ -235,7 +232,7 @@ pub fn generate_pic(class_vec: &mut Vec<Class>, rel_vec: &mut Vec<Relation>) {
 
     // The font size to use
     let scales: Scales = Scales {
-        one: Scale::uniform(32.0),
+        one: Scale::uniform(18.0),
         two: Scale::uniform(26.0),
     };
 
@@ -263,31 +260,60 @@ pub fn generate_pic(class_vec: &mut Vec<Class>, rel_vec: &mut Vec<Relation>) {
     }
 
     // ------ Layouting all relations ------
-    let mut rel_layout_vec: Vec<RelationLayout> = Vec::new();
-    //rel_vec.sort_by_key(|x| x.from_class);
 
-    println!("{:?}", rel_vec);
+    let mut rel_gap_first = REL_GAP_DISTANCE;
+    let mut rel_gap_second = REL_GAP_DISTANCE;
+
+    let mut all_to_class_rels_vec: Vec<Vec<bool>> = Vec::new();
+    for (i, c) in class_vec.iter().enumerate() {
+        let mut empty_vec: Vec<bool> = Vec::new();
+        empty_vec.push(true);
+        all_to_class_rels_vec.push(empty_vec);
+    }
+
+
+    for (i, c) in class_vec.iter().enumerate() {
+        let mut to_class_rels_vec: Vec<bool> = Vec::new();
+        // Durch alle Relationen
+        for (index, rel) in rel_vec.iter().enumerate() {
+            // Wenn Relation eingeht, dann speichere Index der Relation
+            if rel.to_class == c.class_name {
+                to_class_rels_vec.push(false);
+            }
+        }
+        all_to_class_rels_vec[i] = to_class_rels_vec;
+    }
+
+
     // Durch alle Klassen
     for (i,c) in class_vec.iter().enumerate() {
-        println!("cname: {}", c.class_name);
         let mut rel_starts: Vec<XY> = Vec::new();
         let mut rel_starts_stepsize: u32;
+        let mut rel_ends_stepsize: u32;
         let mut rels_indexes: Vec<usize> = Vec::new();
+        let mut rels_indexes2: Vec<usize> = Vec::new();
 
         // Durch alle Relationen
         for (index, rel) in rel_vec.iter().enumerate() {
-            println!("rel index: {}", index);
             // Wenn Relation ausgeht, dann speichere Index der Relation
             if rel.from_class == c.class_name {
-                println!("rel.from_class == c.class_name - index: {}", index);
                 rels_indexes.push(index);
             }
+            // Wenn Relation eingeht, dann speichere Index der Relation
+            if rel.to_class == c.class_name {
+                rels_indexes2.push(index);
+            }
         }
-        println!("rels_indexes.len(): {}", rels_indexes.len());
 
-        rel_starts_stepsize = class_layout_vec[i].width / (rels_indexes.len() as u32 + 1);
+
+        rel_starts_stepsize = (class_layout_vec[i].width/2) / (rels_indexes.len() as u32 + 1);
+
+
         let mut x_start: u32 = 0;
         let mut y_start: u32 = 0;
+        let mut x_end: u32 = 0;
+        let mut y_end: u32 = 0;
+
         if class_layout_vec[i].uneven {
             x_start = class_layout_vec[i].lb.x;
             y_start = class_layout_vec[i].lb.y;
@@ -296,13 +322,13 @@ pub fn generate_pic(class_vec: &mut Vec<Class>, rel_vec: &mut Vec<Relation>) {
             y_start = class_layout_vec[i].lt.y;
         }
 
+
+
         // Durch alle Indexe der Relationen, die aus der Klasse gehen^
         for index in rels_indexes {
-            println!("crelation-index: {}", &index);
 
             // Durch alle Relationen
             for (l, rel) in rel_vec.iter().enumerate() {
-                println!("relation to: {}", rel.to_class);
                 // Wenn Index der Relation der Klasse dem Index der durchlaufenden Relation ist
                 if index == l {
 
@@ -315,86 +341,51 @@ pub fn generate_pic(class_vec: &mut Vec<Class>, rel_vec: &mut Vec<Relation>) {
                     let mut to_class_i: usize = 0;
                     for (ci, c) in class_vec.iter().enumerate() {
                         if c.class_name == rel.to_class {
-                            println!("class to: {}", c.class_name);
                             to_class_i = ci;
                         }
                     }
-                    let mut x2_start: u32 = 0;
-                    let mut y2_start: u32 = 0;
+                    rel_ends_stepsize = (class_layout_vec[to_class_i].width/2) / (all_to_class_rels_vec[to_class_i].len() as u32 + 1);
                     if class_layout_vec[to_class_i].uneven {
-                        x2_start = class_layout_vec[to_class_i].lb.x;
-                        y2_start = class_layout_vec[to_class_i].lb.y;
+                        x_end = class_layout_vec[to_class_i].lb.x + (class_layout_vec[to_class_i].width/2);
+                        y_end = class_layout_vec[to_class_i].lb.y;
                     } else {
-                        x2_start = class_layout_vec[to_class_i].lt.x;
-                        y2_start = class_layout_vec[to_class_i].lt.y;
+                        x_end = class_layout_vec[to_class_i].lt.x + (class_layout_vec[to_class_i].width/2);
+                        y_end = class_layout_vec[to_class_i].lt.y;
                     }
 
+                    let mut multip: u32 = 1;
+                    for (i, vector) in all_to_class_rels_vec.iter_mut().enumerate() {
+                        if i == to_class_i {
+                            for l in 0..vector.len() {
+                                if vector[l] == true {
+                                    multip += 1;
+                                } else {
+                                    vector[l] = true;
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                    x_end += rel_ends_stepsize * multip;
                     let mut xy2: XY = XY {
-                        x: x2_start,
-                        y: y2_start
+                        x: x_end,
+                        y: y_end
                     };
 
-
-                    /*let mut rl: RelationLayout = RelationLayout {
-                        rel: rel,
-                        start: xy1,
-                        end: xy2
-                    };*/
-
-                    draw_rel(&mut imgbuf, &general, &font_vec, &rel, &xy1, &xy2, base_line_first_half);
+                    let mut zwerg = draw_rel(&mut imgbuf, &general, &font_vec,
+                                             &rel, &xy1, &xy2,
+                                             base_line_first_half,
+                                             rel_gap_first, rel_gap_second);
+                    rel_gap_first = zwerg[0];
+                    rel_gap_second = zwerg[1];
                 }
             }
         }
     }
-    // ------------
-    //println!("vec länge: {}", rel_layout_vec.len());
-    //println!("--- x:{}, y:{},  x:{}, y:{}", rel_layout_vec[0].start.x, rel_layout_vec[0].start.y, rel_layout_vec[0].end.x, rel_layout_vec[0].end.y);
-    /*for (i, r) in rel_layout_vec.iter().enumerate() {
-        println!("{}", i);
-        draw_rel(&mut imgbuf, &general, &font, &r);
-    }*/
-    // ------------
+
 
     // Save the picture
     imgbuf.save(&path).unwrap();
-
-
-    /*let mut img = DynamicImage::new_rgb8(imgx, imgy);
-
-    // Construct a rectangle with top-left corner at (4, 5), width 6 and height 7.
-    let rect = Rect::at(4, 5).of_size(6, 7);
-
-    // Contains top-left point:
-    assert_eq!(rect.left(), 4);
-    assert_eq!(rect.top(), 5);
-    assert!(rect.contains(rect.left(), rect.top()));
-
-    // Contains bottom-right point, at (left + width - 1, top + height - 1):
-    assert_eq!(rect.right(), 9);
-    assert_eq!(rect.bottom(), 11);
-    assert!(rect.contains(rect.right(), rect.bottom()));
-
-    let mut rng = rand::thread_rng();
-    let pos: (i32, i32) = (rng.gen_range(0, imgx as i32), rng.gen_range(0, imgy as i32));
-    let color = Rgba([0, 0, 0, 1]);
-
-    imageproc::drawing::draw_filled_circle_mut(&mut img, pos, 5, *color);*/
-
-    // Save the image as “fractal.png”, the format is deduced from the path
-    //imgbuf.save("test.png").unwrap();
-    //img.save(&mut File::create(&Path::new("output.png")).unwrap(), image::PNG);
-
-}
-
-pub fn get_empty_relation() -> Relation {
-    Relation {
-        border_type: BorderType::None,
-        arrow_type: RelationArrow::None,
-        from_class: "".to_string(),
-        from_class_card: "".to_string(),
-        to_class: "".to_string(),
-        to_class_card: "".to_string()
-    }
 }
 
 pub fn draw_class(buffer: &mut image::RgbaImage, general: &General, fonts: &Vec<Font>, class: &Class,
@@ -409,8 +400,6 @@ pub fn draw_class(buffer: &mut image::RgbaImage, general: &General, fonts: &Vec<
 
     match class.class_type {
         ClassType::SimpleClass => {
-            println!("width: {}, height: {}", &class_layout.width, &class_layout.height);
-
             // Outer borderline
             draw_hollow_rect_mut(
                 buffer, imageproc::rect::Rect::at(
@@ -420,10 +409,15 @@ pub fn draw_class(buffer: &mut image::RgbaImage, general: &General, fonts: &Vec<
 
             let mut height_to_write_at: u32 = class_layout.lt.y + PADDING_TOP;
             let mut has_stereotype: bool = if class.class_stereotype.is_empty() { false } else { true };
+            let mut is_abstract: bool = if class.class_stereotype == "<<abstract>>" { true } else { false };
 
             // Draw name (and stereotype)
+            if class.class_type == ClassType::AbstractClass {
+                has_stereotype = true;
+                is_abstract = true;
+            }
             if has_stereotype {
-                if class.class_stereotype == "<<abstract>>" {
+                if is_abstract {
                     draw_text_mut(
                         buffer, colors.black, class_layout.lt.x + PADDING_LEFT,
                         height_to_write_at, scales.two, &fonts[1], &class.class_name);
@@ -449,29 +443,24 @@ pub fn draw_class(buffer: &mut image::RgbaImage, general: &General, fonts: &Vec<
             let mut deco_font: u32 = 0;
             for (i, line) in class.content_lines.iter().enumerate() {
                 let mut is_horizontal_line: bool = false;
+                let mut is_underlined: bool = false;
                 match class.content_decor[i] {
                     TextDecoration::None => {
-                        println!("Textdeco: None");
                     }
                     TextDecoration::HorizontalLine => {
-                        println!("Textdeco: HorizontalLine");
                         is_horizontal_line = true;
                     }
                     TextDecoration::Bold => {
-                        println!("Textdeco: Bold");
                         deco_font = 2;
                     }
                     TextDecoration::Italic => {
-                        println!("Textdeco: Italic");
                         deco_font = 1;
                     }
                     TextDecoration::BoldItalic => {
-                        println!("Textdeco: BoldItalic");
                         deco_font = 3;
                     }
                     TextDecoration::Underlined => {
-                        println!("Textdeco: Underlined");
-                        // TODO
+                        is_underlined = true;
                     }
                 }
                 if is_horizontal_line || line.is_empty() || line == "-" {
@@ -485,144 +474,495 @@ pub fn draw_class(buffer: &mut image::RgbaImage, general: &General, fonts: &Vec<
                     draw_text_mut(
                         buffer, colors.black, class_layout.lt.x + PADDING_LEFT,
                         height_to_write_at, scales.two, &fonts[deco_font as usize], &line);
+                    if is_underlined {
+                        draw_line_segment_mut(buffer,
+                                              ((class_layout.lt.x + PADDING_LEFT) as f32,
+                                               height_to_write_at as f32 + LINE_HEIGHT as f32 - 6.0),
+                                              ((class_layout.lt.x + PADDING_LEFT) as f32 +
+                                                   (LETTER_WIDTH as f32 * (line.len() as f32 - 1.0)),
+                                               height_to_write_at as f32 + LINE_HEIGHT as f32 - 6.0),
+                                              general.colors.black);
+                    }
                 }
                 height_to_write_at += LINE_HEIGHT;
             }
         }
         ClassType::AbstractClass => {
-            // TODO
+            // Outer borderline
+            draw_hollow_rect_mut(
+                buffer, imageproc::rect::Rect::at(
+                    class_layout.lt.x as i32, class_layout.lt.y as i32).of_size(
+                    class_layout.width, class_layout.height),
+                colors.black);
+
+            let mut height_to_write_at: u32 = class_layout.lt.y + PADDING_TOP;
+            let mut has_stereotype: bool = if class.class_stereotype.is_empty() { false } else { true };
+            let mut is_abstract: bool = if class.class_stereotype == "<<abstract>>" { true } else { false };
+
+            // Draw name (and stereotype)
+            if class.class_type == ClassType::AbstractClass {
+                has_stereotype = true;
+                is_abstract = true;
+            }
+            if has_stereotype {
+                if is_abstract {
+                    draw_text_mut(
+                        buffer, colors.black, class_layout.lt.x + PADDING_LEFT,
+                        height_to_write_at, scales.two, &fonts[1], &class.class_name);
+                    height_to_write_at += LINE_HEIGHT;
+                } else {
+                    draw_text_mut(
+                        buffer, colors.black, class_layout.lt.x + PADDING_LEFT,
+                        height_to_write_at, scales.two, &fonts[0], &class.class_stereotype);
+                    height_to_write_at += LINE_HEIGHT;
+                    draw_text_mut(
+                        buffer, colors.black, class_layout.lt.x + PADDING_LEFT,
+                        height_to_write_at, scales.two, &fonts[0], &class.class_name);
+                    height_to_write_at += LINE_HEIGHT;
+                }
+            } else {
+                draw_text_mut(
+                    buffer, colors.black, class_layout.lt.x + PADDING_LEFT,
+                    height_to_write_at, scales.two, &fonts[0], &class.class_name);
+                height_to_write_at += LINE_HEIGHT;
+            }
+
+            // Draw all other lines of text or just lines
+            let mut deco_font: u32 = 0;
+            for (i, line) in class.content_lines.iter().enumerate() {
+                let mut is_horizontal_line: bool = false;
+                let mut is_underlined: bool = false;
+                match class.content_decor[i] {
+                    TextDecoration::None => {
+                    }
+                    TextDecoration::HorizontalLine => {
+                        is_horizontal_line = true;
+                    }
+                    TextDecoration::Bold => {
+                        deco_font = 2;
+                    }
+                    TextDecoration::Italic => {
+                        deco_font = 1;
+                    }
+                    TextDecoration::BoldItalic => {
+                        deco_font = 3;
+                    }
+                    TextDecoration::Underlined => {
+                        is_underlined = true;
+                    }
+                }
+                if is_horizontal_line || line.is_empty() || line == "-" {
+                    draw_hollow_rect_mut(
+                        buffer, imageproc::rect::Rect::at(
+                            class_layout.lt.x as i32, class_layout.lt.y as i32).of_size(
+                            class_layout.width,
+                            height_to_write_at - class_layout.lt.y + (LINE_HEIGHT / 2)),
+                        colors.black);
+                } else {
+                    draw_text_mut(
+                        buffer, colors.black, class_layout.lt.x + PADDING_LEFT,
+                        height_to_write_at, scales.two, &fonts[deco_font as usize], &line);
+                    if is_underlined {
+                        draw_line_segment_mut(buffer,
+                                              ((class_layout.lt.x + PADDING_LEFT) as f32,
+                                               height_to_write_at as f32 + LINE_HEIGHT as f32 - 6.0),
+                                              ((class_layout.lt.x + PADDING_LEFT) as f32 +
+                                                   (LETTER_WIDTH as f32 * (line.len() as f32 - 1.0)),
+                                               height_to_write_at as f32 + LINE_HEIGHT as f32 - 6.0),
+                                              general.colors.black);
+                    }
+                }
+                height_to_write_at += LINE_HEIGHT;
+            }
         }
         ClassType::ActiveClass => {
-            // TODO
+            // Outer borderline
+            draw_hollow_rect_mut(
+                buffer, imageproc::rect::Rect::at(
+                    class_layout.lt.x as i32, class_layout.lt.y as i32).of_size(
+                    class_layout.width, class_layout.height),
+                colors.black);
+            // Inner borderline
+            draw_hollow_rect_mut(
+                buffer, imageproc::rect::Rect::at(
+                    class_layout.lt.x as i32 + PADDING_LEFT as i32, class_layout.lt.y as i32).of_size(
+                    class_layout.width - ACTIVE_PADDING, class_layout.height),
+                colors.black);
+
+            let mut height_to_write_at: u32 = class_layout.lt.y + PADDING_TOP;
+            let mut has_stereotype: bool = if class.class_stereotype.is_empty() { false } else { true };
+            let mut is_abstract: bool = if class.class_stereotype == "<<abstract>>" { true } else { false };
+
+            // Draw name (and stereotype)
+            if class.class_type == ClassType::AbstractClass {
+                has_stereotype = true;
+                is_abstract = true;
+            }
+            if has_stereotype {
+                if is_abstract {
+                    draw_text_mut(
+                        buffer, colors.black, class_layout.lt.x + ACTIVE_PADDING,
+                        height_to_write_at, scales.two, &fonts[1], &class.class_name);
+                    height_to_write_at += LINE_HEIGHT;
+                } else {
+                    draw_text_mut(
+                        buffer, colors.black, class_layout.lt.x + ACTIVE_PADDING,
+                        height_to_write_at, scales.two, &fonts[0], &class.class_stereotype);
+                    height_to_write_at += LINE_HEIGHT;
+                    draw_text_mut(
+                        buffer, colors.black, class_layout.lt.x + ACTIVE_PADDING,
+                        height_to_write_at, scales.two, &fonts[0], &class.class_name);
+                    height_to_write_at += LINE_HEIGHT;
+                }
+            } else {
+                draw_text_mut(
+                    buffer, colors.black, class_layout.lt.x + ACTIVE_PADDING,
+                    height_to_write_at, scales.two, &fonts[0], &class.class_name);
+                height_to_write_at += LINE_HEIGHT;
+            }
+
+            // Draw all other lines of text or just lines
+            let mut deco_font: u32 = 0;
+            for (i, line) in class.content_lines.iter().enumerate() {
+                let mut is_horizontal_line: bool = false;
+                let mut is_underlined: bool = false;
+                match class.content_decor[i] {
+                    TextDecoration::None => {
+                    }
+                    TextDecoration::HorizontalLine => {
+                        is_horizontal_line = true;
+                    }
+                    TextDecoration::Bold => {
+                        deco_font = 2;
+                    }
+                    TextDecoration::Italic => {
+                        deco_font = 1;
+                    }
+                    TextDecoration::BoldItalic => {
+                        deco_font = 3;
+                    }
+                    TextDecoration::Underlined => {
+                        is_underlined = true;
+                    }
+                }
+                if is_horizontal_line || line.is_empty() || line == "-" {
+                    draw_hollow_rect_mut(
+                        buffer, imageproc::rect::Rect::at(
+                            class_layout.lt.x as i32, class_layout.lt.y as i32).of_size(
+                            class_layout.width,
+                            height_to_write_at - class_layout.lt.y + (LINE_HEIGHT / 2)),
+                        colors.black);
+                } else {
+                    draw_text_mut(
+                        buffer, colors.black, class_layout.lt.x + ACTIVE_PADDING,
+                        height_to_write_at, scales.two, &fonts[deco_font as usize], &line);
+                    if is_underlined {
+                        draw_line_segment_mut(buffer,
+                                              ((class_layout.lt.x + ACTIVE_PADDING) as f32,
+                                               height_to_write_at as f32 + LINE_HEIGHT as f32 - 6.0),
+                                              ((class_layout.lt.x + ACTIVE_PADDING) as f32 +
+                                                   (LETTER_WIDTH as f32 * (line.len() as f32 - 1.0)),
+                                               height_to_write_at as f32 + LINE_HEIGHT as f32 - 6.0),
+                                              general.colors.black);
+                    }
+                }
+                height_to_write_at += LINE_HEIGHT;
+            }
         }
         ClassType::DashedBorderClass => {
-            // TODO
         }
         ClassType::VarBorderClass => {
-            // TODO
         }
         ClassType::None => {
-            // TODO
         }
     }
 }
 
 pub fn draw_rel(buffer: &mut image::RgbaImage, general: &General, fonts: &Vec<Font>, rel: &Relation,
-                start: &XY, end: &XY, base_first: u32) {
+                start: &XY, end: &XY, base_first: u32, rel_gap_first: f32, rel_gap_second: f32) -> Vec<f32> {
+
     println!("from: {}, from card: {}", rel.from_class, rel.from_class_card);
     println!("to: {}, to card: {}", rel.to_class, rel.to_class_card);
 
     let mut is_in_first: bool = if start.y == base_first { true } else { false };
     let mut start_rel_y: f32 = if is_in_first {(start.y + RELATION_STICK) as f32} else {(start.y - RELATION_STICK) as f32};
-
+    let mut rel_gap_first = rel_gap_first;
+    let mut rel_gap_second = rel_gap_second;
 
     // Arrows
     match rel.arrow_type {
         RelationArrow::Arrow => {
-            if is_in_first {
-                let mut leftx: u32;
-                let mut lefty: u32;
-                let mut rightx: u32;
-                let mut righty: u32;
+            if end.y == base_first {
+                draw_line_segment_mut(buffer,
+                                      (end.x as f32 - ARROW_SIZE as f32, end.y as f32 + ARROW_SIZE as f32),
+                                      (end.x as f32, end.y as f32),
+                                      general.colors.black);
+                draw_line_segment_mut(buffer,
+                                      (end.x as f32 + ARROW_SIZE as f32, end.y as f32 + ARROW_SIZE as f32),
+                                      (end.x as f32, end.y as f32),
+                                      general.colors.black);
             } else {
-                let mut leftx: u32;
-                let mut lefty: u32;
-                let mut rightx: u32;
-                let mut righty: u32;
+                draw_line_segment_mut(buffer,
+                                      (end.x as f32 - ARROW_SIZE as f32, end.y as f32 - ARROW_SIZE as f32),
+                                      (end.x as f32, end.y as f32),
+                                      general.colors.black);
+                draw_line_segment_mut(buffer,
+                                      (end.x as f32 + ARROW_SIZE as f32, end.y as f32 - ARROW_SIZE as f32),
+                                      (end.x as f32, end.y as f32),
+                                      general.colors.black);
             }
+
         }
         RelationArrow::TriangleEmpty => {
-
+            if end.y == base_first {
+                draw_line_segment_mut(buffer,
+                                      (end.x as f32 - ARROW_SIZE as f32, end.y as f32 + ARROW_SIZE as f32),
+                                      (end.x as f32, end.y as f32),
+                                      general.colors.black);
+                draw_line_segment_mut(buffer,
+                                      (end.x as f32 + ARROW_SIZE as f32, end.y as f32 + ARROW_SIZE as f32),
+                                      (end.x as f32, end.y as f32),
+                                      general.colors.black);
+                draw_line_segment_mut(buffer,
+                                      (end.x as f32 + ARROW_SIZE as f32, end.y as f32 + ARROW_SIZE as f32),
+                                      (end.x as f32 - ARROW_SIZE as f32, end.y as f32 + ARROW_SIZE as f32),
+                                      general.colors.black);
+            } else {
+                draw_line_segment_mut(buffer,
+                                      (end.x as f32 - ARROW_SIZE as f32, end.y as f32 - ARROW_SIZE as f32),
+                                      (end.x as f32, end.y as f32),
+                                      general.colors.black);
+                draw_line_segment_mut(buffer,
+                                      (end.x as f32 + ARROW_SIZE as f32, end.y as f32 - ARROW_SIZE as f32),
+                                      (end.x as f32, end.y as f32),
+                                      general.colors.black);
+                draw_line_segment_mut(buffer,
+                                      (end.x as f32 + ARROW_SIZE as f32, end.y as f32 - ARROW_SIZE as f32),
+                                      (end.x as f32 - ARROW_SIZE as f32, end.y as f32 - ARROW_SIZE as f32),
+                                      general.colors.black);
+            }
         }
         RelationArrow::DiamondEmpty => {
-
+            if is_in_first {
+                draw_line_segment_mut(buffer,
+                                      (start.x as f32 - ARROW_SIZE as f32, start.y as f32 + ARROW_SIZE as f32),
+                                      (start.x as f32, start.y as f32),
+                                      general.colors.black);
+                draw_line_segment_mut(buffer,
+                                      (start.x as f32 + ARROW_SIZE as f32, start.y as f32 + ARROW_SIZE as f32),
+                                      (start.x as f32, start.y as f32),
+                                      general.colors.black);
+                draw_line_segment_mut(buffer,
+                                      (start.x as f32 - ARROW_SIZE as f32, start.y as f32 + ARROW_SIZE as f32),
+                                      (start.x as f32, start.y as f32 + (ARROW_SIZE*2) as f32),
+                                      general.colors.black);
+                draw_line_segment_mut(buffer,
+                                      (start.x as f32 + ARROW_SIZE as f32, start.y as f32 + ARROW_SIZE as f32),
+                                      (start.x as f32, (start.y + ARROW_SIZE * 2) as f32),
+                                      general.colors.black);
+            } else {
+                draw_line_segment_mut(buffer,
+                                      (start.x as f32 - ARROW_SIZE as f32, start.y as f32 - ARROW_SIZE as f32),
+                                      (start.x as f32, start.y as f32),
+                                      general.colors.black);
+                draw_line_segment_mut(buffer,
+                                      (start.x as f32 + ARROW_SIZE as f32, start.y as f32 - ARROW_SIZE as f32),
+                                      (start.x as f32, start.y as f32),
+                                      general.colors.black);
+                draw_line_segment_mut(buffer,
+                                      (start.x as f32 - ARROW_SIZE as f32, start.y as f32 - ARROW_SIZE as f32),
+                                      (start.x as f32, start.y as f32 - (ARROW_SIZE*2) as f32),
+                                      general.colors.black);
+                draw_line_segment_mut(buffer,
+                                      (start.x as f32 + ARROW_SIZE as f32, start.y as f32 - ARROW_SIZE as f32),
+                                      (start.x as f32, (start.y - ARROW_SIZE * 2) as f32),
+                                      general.colors.black);
+            }
         }
         RelationArrow::DiamondFilled => {
-
+            if is_in_first {
+                let mut p1: Point<i32> = Point::new(start.x as i32, start.y as i32);
+                let mut p2: Point<i32> = Point::new(start.x as i32 - ARROW_SIZE as i32, start.y as i32 + ARROW_SIZE as i32);
+                let mut p3: Point<i32> = Point::new(start.x as i32, start.y as i32 + (ARROW_SIZE * 2) as i32);
+                let mut p4: Point<i32> = Point::new(start.x as i32 + ARROW_SIZE as i32, start.y as i32 + ARROW_SIZE as i32);
+                draw_convex_polygon_mut(buffer, &[p1, p2, p3, p4], general.colors.black);
+            } else {
+                let mut p1: Point<i32> = Point::new(start.x as i32, start.y as i32);
+                let mut p2: Point<i32> = Point::new(start.x as i32 - ARROW_SIZE as i32, start.y as i32 - ARROW_SIZE as i32);
+                let mut p3: Point<i32> = Point::new(start.x as i32, start.y as i32 - (ARROW_SIZE * 2) as i32);
+                let mut p4: Point<i32> = Point::new(start.x as i32 + ARROW_SIZE as i32, start.y as i32 - ARROW_SIZE as i32);
+                draw_convex_polygon_mut(buffer, &[p1, p2, p3, p4], general.colors.black);
+            }
         }
         RelationArrow::None => {
-
+            // Done
         }
     }
 
     // Lines
     match rel.border_type {
         BorderType::Solid => {
+            let mut starty = start.y;
+            let mut endy = end.y;
             // Little line / stick
+            if rel.arrow_type == RelationArrow::DiamondEmpty {
+                if is_in_first {
+                    starty += (ARROW_SIZE*2);
+                } else {
+                    starty -= (ARROW_SIZE*2);
+                }
+            };
+            if rel.arrow_type == RelationArrow::TriangleEmpty {
+                if end.y == base_first {
+                    endy += ARROW_SIZE;
+                } else {
+                    endy -= ARROW_SIZE;
+                }
+            };
             draw_line_segment_mut(buffer,
-                                  (start.x as f32, start.y as f32),
-                                  (start.x as f32, (start_rel_y) as f32),
+                                  (start.x as f32, starty as f32),
+                                  (start.x as f32, start_rel_y as f32 + (
+                                      if is_in_first { rel_gap_first } else { -rel_gap_second })),
                                   general.colors.black);
-            // Big line
+            // Card. / multiplicities
+            if !rel.from_class_card.is_empty() {
+                draw_text_mut(
+                    buffer, general.colors.black, start.x as u32 + CARD_DIST as u32,
+                    (start_rel_y +
+                        if is_in_first { rel_gap_first } else { -rel_gap_second } + CARD_DIST as f32) as u32,
+                    general.scales.one, &fonts[0], &rel.from_class_card);
+            }
+            if !rel.to_class_card.is_empty() {
+                draw_text_mut(
+                    buffer, general.colors.black, end.x as u32 + CARD_DIST as u32,
+                    (start_rel_y +
+                        if is_in_first { rel_gap_first } else { -rel_gap_second } + CARD_DIST as f32) as u32,
+                    general.scales.one, &fonts[0], &rel.to_class_card);
+            }
+            // Big lines
             draw_line_segment_mut(buffer,
-                                  (start.x as f32, start_rel_y as f32),
-                                  (end.x as f32, end.y as f32),
+                                  (start.x as f32, start_rel_y as f32 + (
+                                      if is_in_first { rel_gap_first } else { -rel_gap_second })),
+                                  (end.x as f32, start_rel_y as f32 + (
+                                      if is_in_first { rel_gap_first } else { -rel_gap_second })),
                                   general.colors.black);
+            draw_line_segment_mut(buffer,
+                                  (end.x as f32, start_rel_y as f32 + (
+                                      if is_in_first { rel_gap_first } else { -rel_gap_second })),
+                                  (end.x as f32, endy as f32),
+                                  general.colors.black);
+            if is_in_first {
+                rel_gap_first += REL_GAP_DISTANCE;
+            } else {
+                rel_gap_second += REL_GAP_DISTANCE;
+            }
         }
         BorderType::Dashed => {
+            let mut endy = end.y;
+            if rel.arrow_type == RelationArrow::TriangleEmpty {
+                if end.y == base_first {
+                    endy += ARROW_SIZE;
+                } else {
+                    endy -= ARROW_SIZE;
+                }
+            };
+
             let mut start_y_temp = start.y as f32;
-            // Little line / stick
+            let mut start_x_temp = start.x as f32;
+            // Card. / multiplicities
+            if !rel.from_class_card.is_empty() {
+                draw_text_mut(
+                    buffer, general.colors.black, start.x as u32 + CARD_DIST as u32,
+                    (start_rel_y +
+                        if is_in_first { rel_gap_first } else { -rel_gap_second } + CARD_DIST as f32) as u32,
+                    general.scales.one, &fonts[0], &rel.from_class_card);
+            }
+            if !rel.to_class_card.is_empty() {
+                draw_text_mut(
+                    buffer, general.colors.black, end.x as u32 + CARD_DIST as u32,
+                    (start_rel_y +
+                        if is_in_first { rel_gap_first } else { -rel_gap_second } + CARD_DIST as f32) as u32,
+                    general.scales.one, &fonts[0], &rel.to_class_card);
+            }
+            // Little line / stick (FIRST)
             if is_in_first {
-                while start_y_temp < start_rel_y {
-                    println!("while1");
+                println!("start.y: {}", start.y);
+                while (start_y_temp + DASHED_LENGTH as f32) <= start_rel_y + rel_gap_first {
+                    // Little line / stick
+                    println!("start_y_temp + DASHED_LENGTH: {}, start_rel_y + rel_gap_first: {}", start_y_temp + DASHED_LENGTH as f32, start_rel_y + rel_gap_first);
                     draw_line_segment_mut(buffer,
                                           (start.x as f32, start_y_temp as f32),
                                           (start.x as f32, (start_y_temp + DASHED_LENGTH as f32) as f32),
                                           general.colors.black);
-                    start_y_temp += DASHED_LENGTH as f32 *2.0;
+                    start_y_temp += DASHED_LENGTH as f32 * (if (start_y_temp + DASHED_LENGTH as f32) < start_rel_y + rel_gap_first { 2.0 } else { 1.0 });
                 }
-                // Big line
-                // Try Vector: AB=OB-OA  :  start-end
-                let mut step_x = -(start.x as f32 - end.x as f32);
-                let mut step_y = -(start_rel_y as f32 - end.y as f32);
-                println!("VECTOR x: {}, y: {}", step_x, step_y);
-                step_x /= DASHED_LENGTH2 as f32;
-                step_y /= DASHED_LENGTH2 as f32;
-                start_y_temp = start_rel_y;
-                let mut start_x_temp = start.x as f32;
-                while start_y_temp < end.y as f32 - step_y as f32 {
-                    println!("while2");
-                    draw_line_segment_mut(buffer,
-                                          (start_x_temp as f32, start_y_temp as f32),
-                                          ((start_x_temp as f32  + step_x) as f32, (start_y_temp as f32 + step_y) as f32),
-                                          general.colors.black);
-                    start_x_temp += step_x*2.0 as f32;
-                    start_y_temp += step_y*2.0 as f32;
-                }
+
             } else {
-                while start_y_temp > start_rel_y {
-                    println!("while1");
+                while (start_y_temp - DASHED_LENGTH as f32) >= start_rel_y - rel_gap_second {
+                    // Little line / stick
                     draw_line_segment_mut(buffer,
                                           (start.x as f32, start_y_temp as f32),
                                           (start.x as f32, (start_y_temp - DASHED_LENGTH as f32) as f32),
                                           general.colors.black);
-                    start_y_temp -= DASHED_LENGTH as f32 *2.0;
+                    start_y_temp -= DASHED_LENGTH as f32 * 2.0;
                 }
-                // Big line
-                // Try Vector: AB=OB-OA  :  start-end
-                let mut step_x = (start.x as f32 - end.x as f32);
-                let mut step_y = (start_rel_y as f32 - end.y as f32);
-                println!("VECTOR2 x: {}, y: {}", step_x, step_y);
-                step_x /= DASHED_LENGTH2 as f32;
-                step_y /= DASHED_LENGTH2 as f32;
-                start_y_temp = start_rel_y;
-                let mut start_x_temp = start.x as f32;
-                while start_y_temp > end.y as f32 {
-                    println!("while2:: start_y_temp: {}, {}", start_y_temp, end.y);
+
+            }
+
+            // Middle line
+            if start.x < end.x {
+                while (start_x_temp + DASHED_LENGTH as f32) <= end.x as f32 {
                     draw_line_segment_mut(buffer,
-                                          (start_x_temp as f32, start_y_temp as f32),
-                                          ((start_x_temp as f32 + step_x) as f32, (start_y_temp as f32 + step_y) as f32),
+                                          (start_x_temp as f32, start_rel_y as f32 + (
+                                              if is_in_first { rel_gap_first } else { -rel_gap_second })),
+                                          ((start_x_temp + DASHED_LENGTH as f32) as f32, start_rel_y as f32 + (
+                                              if is_in_first { rel_gap_first } else { -rel_gap_second })),
                                           general.colors.black);
-                    start_x_temp -= step_x * 2.0 as f32;
-                    start_y_temp -= step_y * 2.0 as f32;
+                    start_x_temp += DASHED_LENGTH as f32 * 2.0;
+                }
+            } else {
+                while (start_x_temp - DASHED_LENGTH as f32) >= end.x as f32 {
+                    draw_line_segment_mut(buffer,
+                                          (start_x_temp as f32, start_rel_y as f32 + (
+                                              if is_in_first { rel_gap_first } else { -rel_gap_second })),
+                                          ((start_x_temp - DASHED_LENGTH as f32) as f32, start_rel_y as f32 + (
+                                              if is_in_first { rel_gap_first } else { -rel_gap_second })),
+                                          general.colors.black);
+                    start_x_temp -= DASHED_LENGTH as f32 * 2.0;
                 }
             }
 
+            // Little line / stick (SECOND)
+            if end.y == base_first {
+                while (start_y_temp - DASHED_LENGTH as f32) >= endy as f32 {
+                    draw_line_segment_mut(buffer,
+                                          (end.x as f32, start_y_temp as f32),
+                                          (end.x as f32, (start_y_temp - DASHED_LENGTH as f32) as f32),
+                                          general.colors.black);
+                    start_y_temp -= DASHED_LENGTH as f32 * 2.0;
+                }
+            } else {
+                while (start_y_temp + DASHED_LENGTH as f32) <= endy as f32 {
+                    draw_line_segment_mut(buffer,
+                                          (end.x as f32, start_y_temp as f32),
+                                          (end.x as f32, (start_y_temp + DASHED_LENGTH as f32) as f32),
+                                          general.colors.black);
+                    start_y_temp += DASHED_LENGTH as f32 * 2.0;
+                }
+            }
 
+            if is_in_first {
+                rel_gap_first += REL_GAP_DISTANCE;
+            } else {
+                rel_gap_second += REL_GAP_DISTANCE;
+            }
         }
         BorderType::None => {
 
         }
     }
-
+    let mut ret: Vec<f32> = Vec::new();
+    ret.push(rel_gap_first);
+    ret.push(rel_gap_second);
+    ret
 }
