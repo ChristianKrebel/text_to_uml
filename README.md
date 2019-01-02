@@ -7,7 +7,10 @@ Abgabe der Software im Praktikum in der 48. Woche (26. – 30.11.2018).
 
 Ideen:
 Ähnliche textuelle Spezifizierung wie das Programm UMLet:
-![alt text](https://www2.pic-upload.de/img/36161121/Download.png)
+![Umlet](https://www2.pic-upload.de/img/36161121/Download.png)  
+  
+Beispiel Output:  
+![Example](output.png)
 
 # Funktionsweise
 **Text_to_uml** ist ein Programm zur textuellen Spezifikation von UML-Klassendiagrammen, aus der ein Bild generiert werden kann.
