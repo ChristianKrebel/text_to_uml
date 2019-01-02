@@ -1,4 +1,5 @@
 #![allow(dead_code)]
+#[macro_use]
 
 use std::fs::File;
 use std::io::{Write, BufReader, BufRead};
@@ -10,28 +11,157 @@ use std::env;
 use std::io::prelude::*;
 use std::str::*;
 use std::process::exit;
+use std::fs;
+use std::fmt;
+use nom::IResult;
+use std::fmt::Debug;
 
 use defines::*;
 
 
-// Testing Modul. Delete this function and implement your own Hannes.
-pub fn init(filename: &str, mut classes: &mut Vec<Class>, mut relations: &mut Vec<Relation>) -> String{
-
-    let mut vec: Vec<String> = Vec::new();
-    read_file(&mut vec, filename);
-
-    parse_lines(&mut vec, &mut classes, &mut relations);
-
-
-    for line in vec.iter(){
-        println!("lines: {}", line);
+/*fn dump<T: Debug>(res: IResult<&str,T>) {
+    match res {
+        IResult::Done(rest, value) => {println!("Done {:?} {:?}",rest,value)},
+        IResult::Error(err) => {println!("Err {:?}",err)},
+        IResult::Incomplete(needed) => {println!("Needed {:?}",needed)}
     }
+}*/
+fn confirm_result<T: Debug>(res: &Result<(&str, T), nom::Err<&str>>, message_on_failure: &str) -> bool{
+    match res{
+        Ok(v) => {
+            println!("Parsed successfully: {:?}", v);
+            return true;
+        },
+        Err(e) => {
+            match e{
+                nom::Err::Incomplete(n) => println!("Incomplete: {:?}", n),
+                nom::Err::Error(e) => {
+                    //println!("Error while reading Tags: ErrorKind: {}", e.into_error_kind().description());
+                    println!("Error while parsing: {}", message_on_failure);
+                },
+                nom::Err::Failure(e) => println!("Failure")
+            }
+            return false;
+        }
+    }
+}
+
+fn abort_on_failure(success: bool){
+    if !success{
+        println!("Aborting parsing...");
+        exit(-1);
+    }
+}
+
+pub fn init(filename: &str) -> String{
+    named!(model_end<&str, &str>,
+        ws!(tag_s!("/Model"))
+    );
+
+    named!(cd_model_type<&str, &str>,
+        ws!(tag_s!("Model:ClassDiagram"))
+    );
+
+    named!(cd_horizontal_line<&str, &str>,
+        ws!(tag_s!("--"))
+    );
+
+    named!(cd_visibility<&str, &str>,
+        ws!(alt!(
+            tag_s!("public") |
+            tag_s!("protected") |
+            tag_s!("package") |
+            tag_s!("private")
+        ))
+    );
+
+    named!(cd_var_type<&str, &str>,
+        do_parse!(
+            take_while!(tag_s!(" ")) >>
+            ret: take_until!(" ") >>
+            (ret)
+        )
+    );
+
+    named!(cd_var_name<&str, &str>,
+        do_parse!(
+            take_while!(tag_s!(" ")) >>
+            ret: take_until!(" ") >>
+            (ret)
+        )
+    );
+
+    named!(cd_member<&str, String>,
+        do_parse!(
+            visibility: cd_visibility >>
+            isStatic: opt!(ws!(tag_s!("static"))) >>
+            isFinal: opt!(ws!(tag_s!("final"))) >>
+            varType: cd_var_type >>
+            varName: cd_var_name >>
+            (format!("{} {} {} {} {}", visibility, isStatic.unwrap(), isFinal.unwrap(), varType, varName))
+        )
+    );
+
+    named!(class<&str, &str>,
+        tag_s!("asd")
+    );
+
+    named!(relation<&str, &str>,
+        tag_s!("asd")
+    );
+
+    named!(class_diagram<&str, &str>,
+        do_parse!(
+            cd_model_type >>
+            vec_classes: many_till!(class, ws!(tag_s!("Relations:"))) >>
+            vec_relations: many_till!(relation, model_end) >>
+            (
+                "asd"
+            )
+        )
+    );
+
+    named!(diagram<&str, &str>,
+        alt!(class_diagram)
+    );
+
+
+    let mut content = read_file(filename);
+    //println!("In main: content -> {}", content);
+
+
+    let mut res = cd_model_type(&content);
+
+    let mut success = confirm_result(&res, "Model not defined properly");
+    abort_on_failure(success);
+
+
+    let mut res2 = cd_member("public static final boolean someShit");
+
+    let mut success = confirm_result(&res2, "Line broken");
+
+
 
     let str = String::from("done reading file.");
     return str;
 }
 
-fn parse_lines(lines: &mut Vec<String>, classes: &mut Vec<Class>, relations: &mut Vec<Relation>){
+fn read_file(filename: &str) -> String{
+    //println!("In file {}", filename);
+
+    let contents = fs::read_to_string(filename)
+        .expect("Something went wrong reading the file");
+
+    //println!("With text:\n{}", contents);
+
+    return contents;
+}
+
+fn parse_class_diagram(){
+
+}
+
+/*fn parse_lines(lines: &mut Vec<String>, classes: &mut Vec<Class>, relations: &mut Vec<Relation>){
 
     lines.reverse();
 
@@ -351,9 +481,9 @@ fn parse_lines(lines: &mut Vec<String>, classes: &mut Vec<Class>, relations: &mu
             classes.push(class);
         }
     }
-}
+}*/
 
-fn read_file(vec: &mut Vec<String>, filename: &str){
+/*fn read_file(vec: &mut Vec<String>, filename: &str){
     let path = "input.txt";
     /*let buffered = BufReader::new(file);
 
@@ -380,7 +510,5 @@ fn read_file(vec: &mut Vec<String>, filename: &str){
 
         someInt += 1;
     }
-
-
     //println!("With text:\n{}", contents);
-}
+}*/

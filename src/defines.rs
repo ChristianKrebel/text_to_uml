@@ -1,7 +1,14 @@
 use std::collections::HashMap;
 
-#[derive(Debug)]
-#[derive(PartialEq)]
+#[derive(Debug,PartialEq)]
+pub enum DiagramType{
+    ClassDiagram
+}
+
+
+
+
+#[derive(Debug,PartialEq)]
 pub enum ClassType{
     SimpleClass,
     AbstractClass,
@@ -11,8 +18,7 @@ pub enum ClassType{
     None
 }
 
-#[derive(Debug)]
-#[derive(PartialEq)]
+#[derive(Debug,PartialEq)]
 pub enum RelationType{
     Association,
     Inheritance,
@@ -23,8 +29,7 @@ pub enum RelationType{
     None
 }
 
-#[derive(Debug)]
-#[derive(PartialEq)]
+#[derive(Debug,PartialEq)]
 pub enum RelationArrow{
     Arrow,
     TriangleEmpty,
@@ -33,22 +38,29 @@ pub enum RelationArrow{
     None
 }
 
-#[derive(Debug)]
-#[derive(PartialEq)]
+#[derive(Debug,PartialEq)]
 pub enum BorderType{
     Solid,
     Dashed,
     None
 }
 
-#[derive(Debug)]
-#[derive(PartialEq)]
+#[derive(Debug,PartialEq)]
 pub enum TextDecoration{
     Bold,
     Italic,
     BoldItalic,
     Underlined,
     HorizontalLine,
+    None
+}
+
+#[derive(Debug,PartialEq)]
+pub enum Visibility{
+    Public,
+    Package,
+    Protected,
+    Private,
     None
 }
 
@@ -73,11 +85,7 @@ pub struct Relation{
 }
 
 #[derive(Debug)]
-#[derive(PartialEq)]
-pub enum Visibility{
-    Public,
-    Package,
-    Protected,
-    Private,
-    None
+pub struct ClassDiagram{
+    pub classes: Vec<Class>,
+    pub relations: Vec<Relation>
 }

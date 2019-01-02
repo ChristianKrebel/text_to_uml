@@ -1,6 +1,8 @@
 #[macro_use]
 extern crate conrod;
 extern crate rusttype;
+#[macro_use]
+extern crate nom;
 
 mod parser;
 // load module file parser.rs
@@ -11,7 +13,7 @@ use defines::*;
 use std::string::*;
 use std::env;
 
-fn main() {
+/*fn main() {
     //gui::start();
 
     // --- Testing start ---
@@ -48,4 +50,24 @@ fn main() {
     //classes.push(class);
     generator::generate_pic(&mut classes, &mut relations);
     // --- Testing end   ---
+}*/
+
+fn main(){
+    let args: Vec<String> = env::args().collect();
+
+    let mut filename = "";
+    let mut output_filename = "";
+
+    if args.len() == 1 {
+        filename = "input.txt";
+        output_filename = "output.png";
+    }else if args.len() == 2 {
+        filename = args.get(1).unwrap();
+        output_filename = "output.png";
+    }else if args.len() == 3 {
+        filename = args.get(1).unwrap();
+        output_filename = args.get(2).unwrap();
+    }
+
+    parser::init(filename);
 }
