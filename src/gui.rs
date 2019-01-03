@@ -1,39 +1,34 @@
-// the gui module has its own namespace, as well as "extern crate" from main has.
-// when calling from conrod, you have to import conrod again
-use conrod::{self};
-// this is standard in conrod
-use conrod::backend::glium::glium::{self, Surface};
+extern crate azul;
 
-pub fn start() {
+use self::azul::prelude::*;
+use self::azul::widgets::text_input::*;
 
-    // these are default values
+const TEST_IMAGE: &[u8] = include_bytes!("../output.jpeg");
 
-    const WIDTH: u32 = 400;
-    const HEIGHT: u32 = 200;
+struct TestCrudApp {
+    text_input: TextInputState,
+}
 
-    let mut events_loop = glium::glutin::EventsLoop::new();
-    let window = glium::glutin::WindowBuilder::new()
-        .with_title("Hello Conrod")
-        .with_dimensions(WIDTH, HEIGHT);
-    let context = glium::glutin::ContextBuilder::new()
-        .with_vsync(true)
-        .with_multisampling(4);
-    let display = glium::Display::new(window, context, &events_loop).unwrap();
-
-    let mut ui = conrod::UiBuilder::new([WIDTH as f64, HEIGHT as f64]).build();
-
-    let image_map = conrod::image::Map::<glium::texture::Texture2d>::new();
-
-    let mut renderer = conrod::backend::glium::Renderer::new(&display).unwrap();
-
-    'main: loop {
-        // Render the `Ui` and then display it on the screen.
-        if let Some(primitives) = ui.draw_if_changed() {
-            renderer.fill(&display, primitives, &image_map);
-            let mut target = display.draw();
-            target.clear_color(0.0, 1.0, 0.0, 1.0);
-            renderer.draw(&display, &mut target, &image_map).unwrap();
-            target.finish().unwrap();
+impl Default for TestCrudApp {
+    fn default() -> Self {
+        Self {
+            text_input: TextInputState::new("Hover mouse over rectangle and press keys")
         }
     }
+}
+
+impl Layout for TestCrudApp {
+    fn layout(&self, info: WindowInfo<Self>) -> Dom<Self> {
+        Dom::new(NodeType::Div).with_id("wrapper")
+            .with_child(TextInput::new()
+                .bind(info.window, &self.text_input, &self)
+                .dom(&self.text_input))
+            .with_child(Dom::new(NodeType::Image(info.resources.get_image("Cat01").unwrap())).with_id("cat"))
+    }
+}
+
+pub fn start() {
+    let mut app = App::new(TestCrudApp::default(), AppConfig::default());
+    app.add_image("Cat01", &mut TEST_IMAGE, ImageType::Jpeg).unwrap();
+    app.run(Window::new(WindowCreateOptions::default(), css::native()).unwrap()).unwrap();
 }

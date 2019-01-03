@@ -67,7 +67,7 @@ const ACTIVE_PADDING: u32 = PADDING_LEFT * 2;
 const CARD_DIST: u32 = 4;
 
 pub fn generate_pic(class_vec: &mut Vec<Class>, rel_vec: &mut Vec<Relation>) {
-    let path = Path::new("output.png");
+    let path = Path::new("output.jpeg");
 
     // ------ Layouting all classes ------
     let mut class_layout_vec: Vec<ClassLayout> = Vec::new();

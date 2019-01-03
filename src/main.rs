@@ -1,5 +1,4 @@
 #[macro_use]
-extern crate conrod;
 extern crate rusttype;
 
 mod parser;
@@ -12,7 +11,7 @@ use std::string::*;
 use std::env;
 
 fn main() {
-    //gui::start();
+    gui::start();
 
     // --- Testing start ---
     /*let mut classes: Vec<Class> = Vec::new();
