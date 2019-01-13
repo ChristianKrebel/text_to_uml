@@ -4,6 +4,7 @@ extern crate rusttype;
 mod parser;
 // load module file parser.rs
 mod gui;
+mod gui2;
 mod generator;
 mod defines;
 use defines::*;
@@ -22,7 +23,7 @@ fn main() {
     content_decor.push(TextDecoration::None);
     let mut name: String = String::from("Klasse");*/
 
-    let mut classes: Vec<Class> = Vec::new();
+    /*let mut classes: Vec<Class> = Vec::new();
     let mut relations: Vec<Relation> = Vec::new();
 
     let args: Vec<String> = env::args().collect();
@@ -47,4 +48,5 @@ fn main() {
     //classes.push(class);
     generator::generate_pic(&mut classes, &mut relations);
     // --- Testing end   ---
+    */
 }
