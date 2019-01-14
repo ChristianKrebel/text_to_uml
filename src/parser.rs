@@ -15,20 +15,21 @@ use defines::*;
 
 
 // Testing Modul. Delete this function and implement your own Hannes.
-pub fn init(filename: &str, mut classes: &mut Vec<Class>, mut relations: &mut Vec<Relation>) -> String{
+pub fn init(filename: &str) -> (Vec<Class>, Vec<Relation>) {
 
+    let mut classes = Vec::new();
+    let mut relations = Vec::new();
     let mut vec: Vec<String> = Vec::new();
+
     read_file(&mut vec, filename);
 
     parse_lines(&mut vec, &mut classes, &mut relations);
 
-
-    for line in vec.iter(){
+    for line in &vec {
         println!("lines: {}", line);
     }
 
-    let str = String::from("done reading file.");
-    return str;
+    (classes, relations)
 }
 
 fn parse_lines(lines: &mut Vec<String>, classes: &mut Vec<Class>, relations: &mut Vec<Relation>){

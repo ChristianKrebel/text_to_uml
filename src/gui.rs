@@ -1,29 +1,25 @@
-extern crate azul;
-
-use self::azul::prelude::*;
-use self::azul::widgets::text_input::*;
+use azul::prelude::*;
+use azul::widgets::text_input::*;
 
 const TEST_IMAGE: &[u8] = include_bytes!("../output.jpeg");
 
+#[derive(Default)]
 struct TestCrudApp {
     text_input: TextInputState,
 }
 
-impl Default for TestCrudApp {
-    fn default() -> Self {
-        Self {
-            text_input: TextInputState::new("Hover mouse over rectangle and press keys")
-        }
-    }
-}
-
 impl Layout for TestCrudApp {
     fn layout(&self, info: WindowInfo<Self>) -> Dom<Self> {
-        Dom::new(NodeType::Div).with_id("wrapper")
-            .with_child(TextInput::new()
-                .bind(info.window, &self.text_input, &self)
-                .dom(&self.text_input))
-            .with_child(Dom::new(NodeType::Image(info.resources.get_image("Cat01").unwrap())).with_id("cat"))
+
+        let text_input = TextInput::new()
+            .bind(info.window, &self.text_input, &self)
+            .dom(&self.text_input);
+        let image = Dom::image(info.resources.get_image("Cat01").unwrap()).with_id("cat");
+
+        Dom::div()
+        .with_id("wrapper")
+            .with_child(text_input)
+            .with_child(image)
     }
 }
 
