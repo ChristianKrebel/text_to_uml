@@ -4,9 +4,9 @@ extern crate image;
 extern crate imageproc;
 extern crate rand;
 
-mod parser;
+pub(crate) mod parser;
+pub(crate) mod generator;
 mod gui;
-mod generator;
 mod defines;
 use defines::*;
 
@@ -14,8 +14,9 @@ fn main() {
     use std::path::Path;
 
     gui::start();
+
     let (input_filename, output_filename) = get_cli_args("input.txt", "output.png");
-    let (classes, relations) = parser::init(&input_filename);
+    let (classes, relations) = parser::init(&input_filename).unwrap();
     let image_buf = generator::generate_pic(&classes, &relations);
     image_buf.save(&Path::new(&output_filename)).unwrap();
 }

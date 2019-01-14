@@ -1,43 +1,93 @@
 use azul::prelude::*;
 use azul::widgets::{text_input::{TextInput, TextInputState}, button::Button};
+use parser;
+use generator;
 
-const TEST_IMAGE: &[u8] = include_bytes!("../output.jpeg");
 const CUSTOM_CSS: &str = "
-    #cat { width: 500px; }
+    * { letter-spacing: 0.5pt; }
+    #output_image { width: 500px; }
+    #generate_button { height: 50px; }
+    #placeholder_image { background-color: red; font-size: 20px; color: white; }
+    #filename_wrapper { flex-direction: row; height: 14px; }
 ";
+const IMAGE_ID: &str = "OutputImage";
 
 #[derive(Default)]
 struct TestCrudApp {
-    text_input: TextInputState,
+    input_file_name: TextInputState,
+    output_file_name: TextInputState,
+    current_image: Option<String>,
 }
 
 impl Layout for TestCrudApp {
+
     fn layout(&self, info: WindowInfo<Self>) -> Dom<Self> {
 
-        let text_input = TextInput::new()
-            .bind(info.window, &self.text_input, &self)
-            .dom(&self.text_input);
-        let image = Dom::image(info.resources.get_image("Cat01").unwrap()).with_id("cat");
+        let input_file_name_text_field = TextInput::new()
+            .bind(info.window, &self.input_file_name, &self)
+            .dom(&self.input_file_name);
+
+        let output_file_name_text_field = TextInput::new()
+            .bind(info.window, &self.output_file_name, &self)
+            .dom(&self.output_file_name);
+
+        let file_names = Dom::div().with_id("filename_wrapper")
+            .with_child(Dom::label("Input file name: "))
+            .with_child(input_file_name_text_field)
+            .with_child(Dom::label("Output file name: "))
+            .with_child(output_file_name_text_field);
+
+        let image = match &self.current_image {
+            Some(image_id) => Dom::image(info.resources.get_image(image_id).unwrap()).with_id("output_image"),
+            None => Dom::label("Please enter the file path and hit \"Generate Image\".").with_id("placeholder_image"),
+        };
+
         let button = Button::with_label("Generate image").dom()
+            .with_id("generate_button")
             .with_callback(On::LeftMouseUp, Callback(generate_image_callback));
 
         Dom::div().with_id("wrapper")
-            .with_child(text_input)
+            .with_child(file_names)
             .with_child(image)
             .with_child(button)
     }
 }
 
-fn generate_image_callback(_app_state: &mut AppState<TestCrudApp>, window_info: WindowEvent<TestCrudApp>)
+fn generate_image_callback(app_state: &mut AppState<TestCrudApp>, _window_info: WindowEvent<TestCrudApp>)
 -> UpdateScreen
 {
-    println!("Button clicked!");
+    use std::path::Path;
+    use std::io::Cursor;
+
+    let old_image_id = app_state.data.lock().unwrap().current_image.clone();
+    let current_input_path = app_state.data.lock().unwrap().input_file_name.text.clone();
+    let current_output_path = app_state.data.lock().unwrap().output_file_name.text.clone();
+
+    // Delete the old image if necessary
+    app_state.delete_image(IMAGE_ID);
+
+    let (classes, relations) = match parser::init(&current_input_path) {
+        Ok(cr) => cr,
+        Err(e) => {
+            println!("Error loading file: {}: {}", current_input_path, e);
+            return UpdateScreen::DontRedraw;
+        }
+    };
+
+    let mut image_buf = generator::generate_pic(&classes, &relations);
+
+    image_buf.save(&Path::new(&current_output_path))
+        .unwrap_or_else(|_| { println!("Error saving file!"); });
+
+    let mut buffer = Cursor::new(image_buf.into_raw());
+    app_state.add_image(IMAGE_ID, &mut buffer, ImageType::Jpeg).unwrap();
+    app_state.data.lock().unwrap().current_image = Some(IMAGE_ID.to_string());
+
     UpdateScreen::Redraw
 }
 
 pub fn start() {
-    let mut app = App::new(TestCrudApp::default(), AppConfig::default());
-    app.add_image("Cat01", &mut TEST_IMAGE, ImageType::Jpeg).unwrap();
+    let app = App::new(TestCrudApp::default(), AppConfig::default());
     let css = css::override_native(CUSTOM_CSS).unwrap();
     app.run(Window::new(WindowCreateOptions::default(), css).unwrap()).unwrap();
 }

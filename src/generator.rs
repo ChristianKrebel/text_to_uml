@@ -10,12 +10,7 @@ use self::imageproc::rect::*;
 use self::imageproc::drawing::*;
 use rusttype::{point, Font, Scale};
 
-use std::vec::Vec;
-use std::fs::File;
-use std::path::Path;
-use std::ptr::null;
 use std::str::*;
-use std::string::*;
 use std::mem;
 use std::num::Wrapping;
 use self::rand::Rng;

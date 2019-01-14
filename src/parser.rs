@@ -15,24 +15,15 @@ use defines::*;
 
 
 // Testing Modul. Delete this function and implement your own Hannes.
-pub fn init(filename: &str) -> (Vec<Class>, Vec<Relation>) {
+pub fn init(filename: &str) -> Result<(Vec<Class>, Vec<Relation>), io::Error> {
+    let mut lines = read_file(filename)?;
+    Ok(parse_lines(&mut lines))
+}
+
+fn parse_lines(lines: &mut Vec<String>) -> (Vec<Class>, Vec<Relation>) {
 
     let mut classes = Vec::new();
     let mut relations = Vec::new();
-    let mut vec: Vec<String> = Vec::new();
-
-    read_file(&mut vec, filename);
-
-    parse_lines(&mut vec, &mut classes, &mut relations);
-
-    for line in &vec {
-        println!("lines: {}", line);
-    }
-
-    (classes, relations)
-}
-
-fn parse_lines(lines: &mut Vec<String>, classes: &mut Vec<Class>, relations: &mut Vec<Relation>){
 
     lines.reverse();
 
@@ -43,13 +34,10 @@ fn parse_lines(lines: &mut Vec<String>, classes: &mut Vec<Class>, relations: &mu
         }
         let mut string = opt.unwrap();
         string.pop();
-        let mut lower = string.to_lowercase();
 
-        let mut split_lower = lower.split(":");
-        let split_list_lower: Vec<&str> = split_lower.collect();
-
-        let mut split_string = string.split(":");
-        let split_list_string: Vec<&str> = split_string.collect();
+        let lower = string.to_lowercase();
+        let split_list_lower: Vec<&str> = lower.split(":").collect();
+        let split_list_string: Vec<&str> = string.split(":").collect();
 
         if split_list_lower.len() == 1{
             //if split_list_lower.get(0).unwrap()
@@ -100,7 +88,7 @@ fn parse_lines(lines: &mut Vec<String>, classes: &mut Vec<Class>, relations: &mu
                 exit(-1);
             }
 
-            let mut classes_split = classes_str.split(",");
+            let classes_split = classes_str.split(",");
             let classes_split_list: Vec<&str> = classes_split.collect();
 
             if *(classes_split_list.get(0).unwrap()) == classes_str || classes_split_list.len() > 2{ // Invalid
@@ -108,22 +96,21 @@ fn parse_lines(lines: &mut Vec<String>, classes: &mut Vec<Class>, relations: &mu
                 exit(-1);
             }
 
+            let from_class_name = classes_split_list.get(0).unwrap();
+            let to_class_name = classes_split_list.get(1).unwrap();
 
-
-            let mut from_class_name = classes_split_list.get(0).unwrap();
-            let mut to_class_name = classes_split_list.get(1).unwrap();
-
-
-
-            let mut opt_cards = lines.pop();
+            let opt_cards = lines.pop();
 
             if !opt_cards.is_some() {
-                //println!("Error in relation syntax: Missing lines following class type definition3\nAborting...");
-                let mut from_card = "";
-                let mut to_card = "";
 
-                let mut relation: Relation = Relation {arrow_type, border_type: relation_border, from_class: String::from_str(*from_class_name).unwrap(), from_class_card: String::from_str(from_card).unwrap(), to_class: String::from_str(to_class_name).unwrap(), to_class_card: String::from_str(to_card).unwrap()};
-                println!("Full struct for relation: {:?}", relation);
+                let relation: Relation = Relation {
+                    arrow_type,
+                    border_type: relation_border,
+                    from_class: String::from_str(*from_class_name).unwrap(),
+                    from_class_card: String::new(),
+                    to_class: String::from_str(to_class_name).unwrap(),
+                    to_class_card: String::new(),
+                };
 
                 relations.push(relation);
                 continue;
@@ -132,15 +119,18 @@ fn parse_lines(lines: &mut Vec<String>, classes: &mut Vec<Class>, relations: &mu
             let mut opt_cards_str = opt_cards.unwrap();
             opt_cards_str.pop();
 
-            //println!("opt_cards_str: '{}'", opt_cards_str);
+            // No multiplicities given.
+            if opt_cards_str.is_empty() {
 
-            if opt_cards_str.is_empty() { //No multiplicities given.
-                //println!("Error in relation syntax: Missing lines following class type definition4");
-                let mut from_card = "";
-                let mut to_card = "";
+                let mut relation: Relation = Relation {
+                    arrow_type,
+                    border_type: relation_border,
+                    from_class: String::from_str(*from_class_name).unwrap(),
+                    from_class_card: String::new(),
+                    to_class: String::from_str(to_class_name).unwrap(),
+                    to_class_card: String::new(),
+                };
 
-                let mut relation: Relation = Relation {arrow_type, border_type: relation_border, from_class: String::from_str(*from_class_name).unwrap(), from_class_card: String::from_str(from_card).unwrap(), to_class: String::from_str(to_class_name).unwrap(), to_class_card: String::from_str(to_card).unwrap()};
-                println!("Full struct for relation: {:?}", relation);
 
                 relations.push(relation);
                 continue;
@@ -209,7 +199,7 @@ fn parse_lines(lines: &mut Vec<String>, classes: &mut Vec<Class>, relations: &mu
             /*
              * Class Name
              */
-            let mut class_name: String = split_list_string.get(1).unwrap().to_string();
+            let class_name: String = split_list_string.get(1).unwrap().to_string();
 
 
             /*
@@ -346,42 +336,24 @@ fn parse_lines(lines: &mut Vec<String>, classes: &mut Vec<Class>, relations: &mu
                 content_decor.push(field_decor);
             }
 
-            let mut class: Class = Class {border_width: 0, class_name, class_type, content_lines, content_decor, class_stereotype};
-            println!("Full struct for class: {:?}", class);
+            let class: Class = Class {
+                border_width: 0,
+                class_name,
+                class_type,
+                content_lines,
+                content_decor,
+                class_stereotype
+            };
 
             classes.push(class);
         }
     }
+
+    (classes, relations)
 }
 
-fn read_file(vec: &mut Vec<String>, filename: &str){
-    let path = "input.txt";
-    /*let buffered = BufReader::new(file);
-
-    for line in buffered.lines() {
-        let l = line.unwrap();
-        vec.push(l);
-    }*/
-
-    let mut f = File::open(path).expect("file not found");
-
-    let mut contents = String::new();
-    f.read_to_string(&mut contents).expect("something went wrong reading the file");
-
-    let mut split = contents.split("\n");
-    let list: Vec<&str> = split.collect();
-
-    let mut someInt = 0;
-    for string in list.iter(){
-        let mut string: String = String::from_str(*string).unwrap();
-        if string == "" && list.len()-1 == someInt{
-            continue;
-        }
-        vec.push(string);
-
-        someInt += 1;
-    }
-
-
-    //println!("With text:\n{}", contents);
+fn read_file(filename: &str) -> Result<Vec<String>, io::Error> {
+    use std::fs;
+    let contents = fs::read_to_string(filename)?;
+    Ok(contents.lines().filter(|line| !line.is_empty()).map(|line| line.to_string()).collect())
 }
