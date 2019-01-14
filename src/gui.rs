@@ -58,29 +58,39 @@ fn generate_image_callback(app_state: &mut AppState<TestCrudApp>, _window_info: 
 {
     use std::path::Path;
     use std::io::Cursor;
+    use std::env;
 
     let old_image_id = app_state.data.lock().unwrap().current_image.clone();
     let current_input_path = app_state.data.lock().unwrap().input_file_name.text.clone();
     let current_output_path = app_state.data.lock().unwrap().output_file_name.text.clone();
 
+    let current_working_directory = env::current_dir().ok().and_then(|p| Some(p.to_str().unwrap_or("/").to_string())).unwrap_or_default();
+    let real_input_path = format!("{}/{}", current_working_directory, current_input_path);
+    let real_output_path = format!("{}/{}", current_working_directory, current_output_path);
+
     // Delete the old image if necessary
     app_state.delete_image(IMAGE_ID);
 
-    let (classes, relations) = match parser::init(&current_input_path) {
+    let (classes, relations) = match parser::init(&real_input_path) {
         Ok(cr) => cr,
         Err(e) => {
-            println!("Error loading file: {}: {}", current_input_path, e);
+            println!("Error loading file: {}: {}", real_input_path, e);
             return UpdateScreen::DontRedraw;
         }
     };
 
     let mut image_buf = generator::generate_pic(&classes, &relations);
 
-    image_buf.save(&Path::new(&current_output_path))
-        .unwrap_or_else(|_| { println!("Error saving file!"); });
+    if real_output_path.is_empty()  {
+        println!("Empty output file path!");
+        return UpdateScreen::DontRedraw;
+    }
+
+    image_buf.save(&Path::new(&real_output_path))
+        .unwrap_or_else(|_| { println!("Error saving file to: {}!", real_output_path); });
 
     let mut buffer = Cursor::new(image_buf.into_raw());
-    app_state.add_image(IMAGE_ID, &mut buffer, ImageType::Jpeg).unwrap();
+    app_state.add_image(IMAGE_ID, &mut buffer, ImageType::GuessImageFormat).unwrap();
     app_state.data.lock().unwrap().current_image = Some(IMAGE_ID.to_string());
 
     UpdateScreen::Redraw
