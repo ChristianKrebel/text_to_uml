@@ -5,7 +5,12 @@ authors = ["starlesschris <chkrebel98@gmail.com>", "viddie <viddie@hotmail.de>"]
 
 [dependencies]
 rusttype = "0.5.2"
-conrod = { version = "0.55.0", features = ["glium", "winit"] }
-image = "*"
+image = "0.20"
 imageproc = "0.16.0"
 rand = "0.6.0"
+
+[dependencies.azul]
+git = "https://github.com/maps4print/azul"
+rev = "864de10a0a7cfbe88a9719a5c7070d2323a58de3"
+default-features = false
+features = ["native-style", "css-parser", "image_loading"]
