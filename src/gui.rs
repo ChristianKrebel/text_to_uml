@@ -1,71 +1,103 @@
-extern crate azul;
-
-use generator;
+use azul::prelude::*;
+use azul::widgets::{text_input::{TextInput, TextInputState}, button::Button};
 use parser;
-use defines::*;
-use gui2;
+use generator;
 
-use self::azul::prelude::*;
-use self::azul::{widgets::text_input::*, widgets::{label::Label, button::Button}};
+const CUSTOM_CSS: &str = "
+    * { letter-spacing: 0.5pt; }
+    #output_image { width: 500px; }
+    #generate_button { height: 50px; }
+    #placeholder_image { background-color: red; font-size: 20px; color: white; }
+    #filename_wrapper { flex-direction: row; height: 14px; }
+";
+const IMAGE_ID: &str = "OutputImage";
 
-const TEST_IMAGE: &[u8] = include_bytes!("../output.jpeg");
-
-struct DataModel {
-    text_input: TextInputState,
+#[derive(Default)]
+struct TestCrudApp {
+    input_file_name: TextInputState,
+    output_file_name: TextInputState,
+    current_image: Option<String>,
 }
 
-impl Default for DataModel {
-    fn default() -> Self {
-        Self {
-            text_input: TextInputState::new("Please enter your model-text here"),
-        }
-    }
-}
+impl Layout for TestCrudApp {
 
-impl Layout for DataModel {
-    // Model renders View
     fn layout(&self, info: WindowInfo<Self>) -> Dom<Self> {
-        let btn_gen = Button::with_label("Generate model").dom()
-            .with_callback(On::LeftMouseDown, Callback(generate_pic));
-        Dom::new(NodeType::Div).with_id("wrapper")
-            .with_child(TextInput::new()
-                .bind(info.window, &self.text_input, &self)
-                .dom(&self.text_input))
-            .with_child(btn_gen)
-            //.with_child(Dom::new(NodeType::Image(info.resources.get_image("Cat01").unwrap())).with_id("cat"))
+
+        let input_file_name_text_field = TextInput::new()
+            .bind(info.window, &self.input_file_name, &self)
+            .dom(&self.input_file_name);
+
+        let output_file_name_text_field = TextInput::new()
+            .bind(info.window, &self.output_file_name, &self)
+            .dom(&self.output_file_name);
+
+        let file_names = Dom::div().with_id("filename_wrapper")
+            .with_child(Dom::label("Input file name: "))
+            .with_child(input_file_name_text_field)
+            .with_child(Dom::label("Output file name: "))
+            .with_child(output_file_name_text_field);
+
+        let image = match &self.current_image {
+            Some(image_id) => Dom::image(info.resources.get_image(image_id).unwrap()).with_id("output_image"),
+            None => Dom::label("Please enter the file path and hit \"Generate Image\".").with_id("placeholder_image"),
+        };
+
+        let button = Button::with_label("Generate image").dom()
+            .with_id("generate_button")
+            .with_callback(On::LeftMouseUp, Callback(generate_image_callback));
+
+        Dom::div().with_id("wrapper")
+            .with_child(file_names)
+            .with_child(image)
+            .with_child(button)
     }
 }
 
-// View updates Model
-fn generate_pic(app_state: &mut AppState<DataModel>, _event: WindowEvent<DataModel>) -> UpdateScreen {
-    //app_state.data.modify(|state| state.counter += 1);
-    let mut filename = "input.txt";
-    let mut classes: Vec<Class> = Vec::new();
-    let mut relations: Vec<Relation> = Vec::new();
-    parser::init(filename, &mut classes, &mut relations);
-    generator::generate_pic(&mut classes, &mut relations);
+fn generate_image_callback(app_state: &mut AppState<TestCrudApp>, _window_info: WindowEvent<TestCrudApp>)
+                           -> UpdateScreen
+{
+    use std::path::Path;
+    use std::io::Cursor;
+    use std::env;
 
-    /*let mut app2 = App::new(DataModel::default(), AppConfig::default());
-    let mut window_options2 = WindowCreateOptions::default();
-    window_options2.state.title = "Text to UML - Model".into();
-    app2.push_window(Window::new(window_options2, css::native()).unwrap());
-    //app2.create_window(WindowCreateOptions::default(), azul_native_style::native());
-    */
+    let old_image_id = app_state.data.lock().unwrap().current_image.clone();
+    let current_input_path = app_state.data.lock().unwrap().input_file_name.text.clone();
+    let current_output_path = app_state.data.lock().unwrap().output_file_name.text.clone();
+
+    let current_working_directory = env::current_dir().ok().and_then(|p| Some(p.to_str().unwrap_or("/").to_string())).unwrap_or_default();
+    let real_input_path = format!("{}/{}", current_working_directory, current_input_path);
+    let real_output_path = format!("{}/{}", current_working_directory, current_output_path);
+
+    // Delete the old image if necessary
+    app_state.delete_image(IMAGE_ID);
+
+    let (classes, relations) = match parser::init(&real_input_path) {
+        Ok(cr) => cr,
+        Err(e) => {
+            println!("Error loading file: {}: {}", real_input_path, e);
+            return UpdateScreen::DontRedraw;
+        }
+    };
+
+    let mut image_buf = generator::generate_pic(&classes, &relations);
+
+    if real_output_path.is_empty()  {
+        println!("Empty output file path!");
+        return UpdateScreen::DontRedraw;
+    }
+
+    image_buf.save(&Path::new(&real_output_path))
+        .unwrap_or_else(|_| { println!("Error saving file to: {}!", real_output_path); });
+
+    let mut buffer = Cursor::new(image_buf.into_raw());
+    app_state.add_image(IMAGE_ID, &mut buffer, ImageType::GuessImageFormat).unwrap();
+    app_state.data.lock().unwrap().current_image = Some(IMAGE_ID.to_string());
+
     UpdateScreen::Redraw
 }
 
 pub fn start() {
-
-    macro_rules! CSS_PATH { () => (concat!(env!("CARGO_MANIFEST_DIR"), "/src/hot_reload.css")) }
-
-    let mut app = App::new(DataModel::default(), AppConfig::default());
-    app.add_image("Cat01", &mut TEST_IMAGE, ImageType::Jpeg).unwrap();
-
-    /*let mut window_options = WindowCreateOptions::default();
-    window_options.state.title = "Text to UML".into();*/
-
-    let css = css::override_native(include_str!(CSS_PATH!())).unwrap();
-    let window = Window::new(WindowCreateOptions::default(), css).unwrap();
-    app.run(window).unwrap();
-    //app.run(Window::new(window_options, css::from_str(include_str!(CSS_PATH!())).unwrap())).unwrap();
+    let app = App::new(TestCrudApp::default(), AppConfig::default());
+    let css = css::override_native(CUSTOM_CSS).unwrap();
+    app.run(Window::new(WindowCreateOptions::default(), css).unwrap()).unwrap();
 }

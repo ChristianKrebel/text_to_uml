@@ -4,19 +4,13 @@ extern crate image;
 extern crate imageproc;
 extern crate rand;
 
-
 use defines::*;
 
 use self::imageproc::rect::*;
 use self::imageproc::drawing::*;
 use rusttype::{point, Font, Scale};
 
-use std::vec::Vec;
-use std::fs::File;
-use std::path::Path;
-use std::ptr::null;
 use std::str::*;
-use std::string::*;
 use std::mem;
 use std::num::Wrapping;
 use self::rand::Rng;
@@ -66,8 +60,7 @@ const ARROW_SIZE: u32 = 20;
 const ACTIVE_PADDING: u32 = PADDING_LEFT * 2;
 const CARD_DIST: u32 = 4;
 
-pub fn generate_pic(class_vec: &mut Vec<Class>, rel_vec: &mut Vec<Relation>) {
-    let path = Path::new("output.jpeg");
+pub fn generate_pic(class_vec: &[Class], rel_vec: &[Relation]) -> RgbaImage {
 
     // ------ Layouting all classes ------
     let mut class_layout_vec: Vec<ClassLayout> = Vec::new();
@@ -383,9 +376,7 @@ pub fn generate_pic(class_vec: &mut Vec<Class>, rel_vec: &mut Vec<Relation>) {
         }
     }
 
-
-    // Save the picture
-    imgbuf.save(&path).unwrap();
+    imgbuf
 }
 
 pub fn draw_class(buffer: &mut image::RgbaImage, general: &General, fonts: &Vec<Font>, class: &Class,
