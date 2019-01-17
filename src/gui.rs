@@ -1,4 +1,5 @@
 use azul::prelude::*;
+use azul::prelude::RawImageFormat;
 use azul::widgets::{text_input::{TextInput, TextInputState}, button::Button};
 use parser;
 use generator;
@@ -7,8 +8,8 @@ const CUSTOM_CSS: &str = "
     * { letter-spacing: 0.5pt; }
     #output_image { width: 500px; }
     #generate_button { height: 50px; }
-    #placeholder_image { background-color: red; font-size: 20px; color: white; }
-    #filename_wrapper { flex-direction: row; height: 14px; }
+    #placeholder_image { background-color: white; font-size: 20px; color: black; }
+    #filename_wrapper { flex-direction: row; height: 28px; }
 ";
 const IMAGE_ID: &str = "OutputImage";
 
@@ -79,7 +80,7 @@ fn generate_image_callback(app_state: &mut AppState<TestCrudApp>, _window_info: 
         }
     };
 
-    let mut image_buf = generator::generate_pic(&classes, &relations);
+    let (mut image_buf, dim) = generator::generate_pic(&classes, &relations);
 
     if real_output_path.is_empty()  {
         println!("Empty output file path!");
@@ -89,8 +90,8 @@ fn generate_image_callback(app_state: &mut AppState<TestCrudApp>, _window_info: 
     image_buf.save(&Path::new(&real_output_path))
         .unwrap_or_else(|_| { println!("Error saving file to: {}!", real_output_path); });
 
-    let mut buffer = Cursor::new(image_buf.into_raw());
-    app_state.add_image(IMAGE_ID, &mut buffer, ImageType::GuessImageFormat).unwrap();
+    let mut buffer = image_buf.into_raw();
+    app_state.add_image_raw(IMAGE_ID, buffer, dim,RawImageFormat::BGRA8).unwrap();
     app_state.data.lock().unwrap().current_image = Some(IMAGE_ID.to_string());
 
     UpdateScreen::Redraw

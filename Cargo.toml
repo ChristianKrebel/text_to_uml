@@ -6,11 +6,11 @@ authors = ["starlesschris <chkrebel98@gmail.com>", "viddie <viddie@hotmail.de>"]
 [dependencies]
 rusttype = "0.5.2"
 image = "0.20"
-imageproc = "0.16.0"
+imageproc = { version = "0.16.0", default-features = false }
 rand = "0.6.0"
 
 [dependencies.azul]
 git = "https://github.com/maps4print/azul"
-rev = "864de10a0a7cfbe88a9719a5c7070d2323a58de3"
+rev = "55214e134b636c68919ecac7f20547cbeb56223f"
 default-features = false
-features = ["native-style", "css-parser", "image_loading"]
+features = ["native-style", "css-parser"]
