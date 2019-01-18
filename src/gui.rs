@@ -3,6 +3,7 @@ use azul::prelude::RawImageFormat;
 use azul::widgets::{button::Button, label::Label, text_input::{TextInput, TextInputState}};
 use generator;
 use parser;
+use defines::*;
 
 const CUSTOM_CSS: &str = "
     * { letter-spacing: 0.5pt; }
@@ -109,7 +110,9 @@ fn generate_image_callback(app_state: &mut AppState<AppData>, _window_info: Wind
                 return UpdateScreen::Redraw;
             }
     }
-    let (classes, relations) = match parser::init(&real_input_path) {
+
+    //========== Correct Implementation ==========
+    /*let (classes, relations) = match parser::init(&real_input_path) {
         Ok(cr) => cr,
         Err(e) => {
             println!("ERROR: Cannot load file \"{}\": {}.", real_input_path, e);
@@ -117,7 +120,56 @@ fn generate_image_callback(app_state: &mut AppState<AppData>, _window_info: Wind
                 format!("{}ERROR: Cannot load file \"{}\": {}.\n", state.status, real_input_path, e));
             return UpdateScreen::Redraw;
         }
-    };
+    };*/
+    //========================================
+
+    //========== Test Implementation ==========
+    let mut classes: Vec<Class> = Vec::new();
+    let mut relations: Vec<Relation> = Vec::new();
+    let mut content_lines: Vec<String> = Vec::new();
+    let mut content_decor: Vec<TextDecoration> = Vec::new();
+    content_lines.push(String::from("-"));
+    content_lines.push(String::from("- Attribute"));
+    content_decor.push(TextDecoration::None);
+    content_decor.push(TextDecoration::None);
+    let mut content_lines2: Vec<String> = Vec::new();
+    let mut content_decor2: Vec<TextDecoration> = Vec::new();
+    content_lines2.push(String::from("-"));
+    content_lines2.push(String::from("- Attribute"));
+    content_decor2.push(TextDecoration::None);
+    content_decor2.push(TextDecoration::Underlined);
+    let mut class: Class = Class
+        {
+            class_type: ClassType::SimpleClass,
+            class_name: String::from("Klasse"),
+            class_stereotype: String::from("<<interface>>"),
+            border_width: 0,
+            content_lines: content_lines,
+            content_decor: content_decor
+        };
+    let mut class2: Class = Class
+        {
+            class_type: ClassType::SimpleClass,
+            class_name: String::from("Klasse2"),
+            class_stereotype: String::from("<<blub>>"),
+            border_width: 0,
+            content_lines: content_lines2,
+            content_decor: content_decor2
+        };
+    classes.push(class);
+    classes.push(class2);
+
+    let mut relation: Relation = Relation
+        {
+            border_type: BorderType::Dashed,
+            arrow_type: RelationArrow::DiamondFilled,
+            from_class: String::from("Klasse"),
+            from_class_card: String::from("n"),
+            to_class: String::from("Klasse2"),
+            to_class_card: String::from("*")
+        };
+    relations.push(relation);
+    //========================================
 
     let (mut image_buf, dim) = generator::generate_pic(
         &classes, &relations,
