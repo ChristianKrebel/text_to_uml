@@ -1,29 +1,33 @@
 use azul::prelude::*;
 use azul::prelude::RawImageFormat;
-use azul::widgets::{text_input::{TextInput, TextInputState}, button::Button};
-use parser;
+use azul::widgets::{button::Button, label::Label, text_input::{TextInput, TextInputState}};
 use generator;
+use parser;
 
 const CUSTOM_CSS: &str = "
     * { letter-spacing: 0.5pt; }
+    #input_field { padding-left: 4px; padding-right: 4px; }
+    #input_label { padding-left: 4px; padding-right: 4px; }
+    #output_field { padding-left: 4px; padding-right: 4px; }
+    #output_label { padding-left: 4px; padding-right: 4px; }
     #output_image { width: 500px; }
-    #generate_button { height: 50px; }
+    #generate_button {  }
     #placeholder_image { background-color: white; font-size: 20px; color: black; }
-    #filename_wrapper { flex-direction: row; height: 28px; }
+    #filename_wrapper { flex-direction: row; height: 28px; padding: 4px; margin: 2px; }
+    #bottom_wrapper { flex-direction: row; height: 50px; padding: 4px; margin: 2px; }
 ";
 const IMAGE_ID: &str = "OutputImage";
 
 #[derive(Default)]
-struct TestCrudApp {
+struct AppData {
     input_file_name: TextInputState,
     output_file_name: TextInputState,
     current_image: Option<String>,
+    status: String,
 }
 
-impl Layout for TestCrudApp {
-
+impl Layout for AppData {
     fn layout(&self, info: WindowInfo<Self>) -> Dom<Self> {
-
         let input_file_name_text_field = TextInput::new()
             .bind(info.window, &self.input_file_name, &self)
             .dom(&self.input_file_name);
@@ -33,28 +37,35 @@ impl Layout for TestCrudApp {
             .dom(&self.output_file_name);
 
         let file_names = Dom::div().with_id("filename_wrapper")
-            .with_child(Dom::label("Input file name: "))
-            .with_child(input_file_name_text_field)
-            .with_child(Dom::label("Output file name: "))
-            .with_child(output_file_name_text_field);
+            .with_child(Dom::label("Input file name: ").with_id("input_label"))
+            .with_child(input_file_name_text_field.with_id("input_field"))
+            .with_child(Dom::label("Output file name: ").with_id("output_label"))
+            .with_child(output_file_name_text_field.with_id("output_field"));
 
         let image = match &self.current_image {
-            Some(image_id) => Dom::image(info.resources.get_image(image_id).unwrap()).with_id("output_image"),
-            None => Dom::label("Please enter the file path and hit \"Generate Image\".").with_id("placeholder_image"),
+            Some(image_id) => Dom::image(info.resources.get_image(image_id).unwrap())
+                .with_id("output_image"),
+            None => Dom::label("Please enter the file path and hit \"Generate Image\".")
+                .with_id("placeholder_image"),
         };
 
         let button = Button::with_label("Generate image").dom()
             .with_id("generate_button")
             .with_callback(On::LeftMouseUp, Callback(generate_image_callback));
 
+        let status_label = Label::new(format!("{}", self.status)).dom();
+
         Dom::div().with_id("wrapper")
             .with_child(file_names)
             .with_child(image)
-            .with_child(button)
+            .with_child(Dom::div().with_id("bottom_wrapper")
+                .with_child(button)
+                .with_child(status_label)
+            )
     }
 }
 
-fn generate_image_callback(app_state: &mut AppState<TestCrudApp>, _window_info: WindowEvent<TestCrudApp>)
+fn generate_image_callback(app_state: &mut AppState<AppData>, _window_info: WindowEvent<AppData>)
                            -> UpdateScreen
 {
     use std::path::Path;
@@ -65,40 +76,80 @@ fn generate_image_callback(app_state: &mut AppState<TestCrudApp>, _window_info: 
     let current_input_path = app_state.data.lock().unwrap().input_file_name.text.clone();
     let current_output_path = app_state.data.lock().unwrap().output_file_name.text.clone();
 
-    let current_working_directory = env::current_dir().ok().and_then(|p| Some(p.to_str().unwrap_or("/").to_string())).unwrap_or_default();
+    let current_working_directory = env::current_dir().ok()
+        .and_then(|p| Some(p.to_str().unwrap_or("/").to_string())).unwrap_or_default();
     let real_input_path = format!("{}/{}", current_working_directory, current_input_path);
     let real_output_path = format!("{}/{}", current_working_directory, current_output_path);
 
     // Delete the old image if necessary
     app_state.delete_image(IMAGE_ID);
 
+    // Clear status
+    app_state.data.modify(|state| state.status = String::from(""));
+
+    // Check for file extension
+    let mut dot_pos = 0;
+    let mut file_extension: String = String::from("");
+
+    if current_input_path.contains(".") {
+        dot_pos = current_input_path.chars().position(|c| c == '.').unwrap() + 1;
+        let file_extension_len = current_input_path.len() - dot_pos;
+        file_extension = current_input_path.chars().skip(dot_pos).take(file_extension_len).collect();
+    }
+    if !current_input_path.is_empty() {
+        if !current_input_path.contains(".")
+            || file_extension.is_empty()
+            || !file_extension.chars().all(|x| x.is_alphabetic())
+            {
+                println!("ERROR: Cannot load file \"{}\": No (correct) file extension found.",
+                         real_input_path);
+                app_state.data.modify(|state| state.status =
+                    format!("{}ERROR: Cannot load file \"{}\": No (correct) file extension found.\n",
+                            state.status, real_input_path));
+                return UpdateScreen::Redraw;
+            }
+    }
     let (classes, relations) = match parser::init(&real_input_path) {
         Ok(cr) => cr,
         Err(e) => {
-            println!("Error loading file: {}: {}", real_input_path, e);
-            return UpdateScreen::DontRedraw;
+            println!("ERROR: Cannot load file \"{}\": {}.", real_input_path, e);
+            app_state.data.modify(|state| state.status =
+                format!("{}ERROR: Cannot load file \"{}\": {}.\n", state.status, real_input_path, e));
+            return UpdateScreen::Redraw;
         }
     };
 
-    let (mut image_buf, dim) = generator::generate_pic(&classes, &relations);
+    let (mut image_buf, dim) = generator::generate_pic(
+        &classes, &relations,
+    );
 
-    if real_output_path.is_empty()  {
-        println!("Empty output file path!");
-        return UpdateScreen::DontRedraw;
+    if current_output_path.is_empty() {
+        println!("ERROR: The output file path cannot be empty.");
+        app_state.data.modify(|state| state.status =
+            format!("{}ERROR: The output file path cannot be empty.\n", state.status));
     }
 
     image_buf.save(&Path::new(&real_output_path))
-        .unwrap_or_else(|_| { println!("Error saving file to: {}!", real_output_path); });
+        .unwrap_or_else(|_|
+            {
+                println!("ERROR: Cannot save file to \"{}\".", real_output_path);
+                app_state.data.modify(|state| state.status =
+                    format!("{}ERROR: Cannot save file to \"{}\".\n", state.status, real_output_path));
+            });
 
     let mut buffer = image_buf.into_raw();
-    app_state.add_image_raw(IMAGE_ID, buffer, dim,RawImageFormat::BGRA8).unwrap();
+    app_state.add_image_raw(IMAGE_ID, buffer, dim,
+                            RawImageFormat::BGRA8).unwrap();
     app_state.data.lock().unwrap().current_image = Some(IMAGE_ID.to_string());
+
+    app_state.data.modify(|state| state.status =
+        format!("{}SUCCESS: Generated model.\n", state.status));
 
     UpdateScreen::Redraw
 }
 
 pub fn start() {
-    let app = App::new(TestCrudApp::default(), AppConfig::default());
+    let app = App::new(AppData::default(), AppConfig::default());
     let css = css::override_native(CUSTOM_CSS).unwrap();
     app.run(Window::new(WindowCreateOptions::default(), css).unwrap()).unwrap();
 }
