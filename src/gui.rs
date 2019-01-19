@@ -11,20 +11,50 @@ const CUSTOM_CSS: &str = "
     #input_label { padding-left: 4px; padding-right: 4px; }
     #output_field { padding-left: 4px; padding-right: 4px; }
     #output_label { padding-left: 4px; padding-right: 4px; }
-    #output_image { width: 500px; }
+    #input_model_field { height: 400px; background-color: yellow; }
+    #output_image { width: [[ prop_width_output_image | 500px ]] }
     #generate_button {  }
-    #placeholder_image { background-color: white; font-size: 20px; color: black; }
+    #status_label { background-color: red; line-height: 1.3pt; }
+    #placeholder_image { background-color: blue; font-size: 20px; color: black; }
     #filename_wrapper { flex-direction: row; height: 28px; padding: 4px; margin: 2px; }
-    #bottom_wrapper { flex-direction: row; height: 50px; padding: 4px; margin: 2px; }
+    #bottom_wrapper { min-height: 200px; flex-direction: row; padding: 4px; margin: 2px; }
+    #middle_wrapper { flex-direction: row; min-height: 50px; max-height: 70px; padding: 4px; margin: 2px; }
 ";
 const IMAGE_ID: &str = "OutputImage";
 
-#[derive(Default)]
 struct AppData {
     input_file_name: TextInputState,
     output_file_name: TextInputState,
+    input_model_structure: TextInputState,
     current_image: Option<String>,
     status: String,
+}
+
+impl Default for AppData {
+    fn default() -> Self {
+        Self {
+            input_file_name: TextInputState::new("input.txt"),
+            output_file_name: TextInputState::new("output.png"),
+            input_model_structure: TextInputState::new("AbstractClass:Person
+--
+protected static String name
+protected String vorname
+--
+public String getFullName()
+
+Class:Angestellter
+--
+static int ID
+private String position
+--
+public Auftrag auftragErstellen()
+public void auftragBearbeiten()
+
+"),
+            current_image: None,
+            status: String::new()
+        }
+    }
 }
 
 impl Layout for AppData {
@@ -43,6 +73,11 @@ impl Layout for AppData {
             .with_child(Dom::label("Output file name: ").with_id("output_label"))
             .with_child(output_file_name_text_field.with_id("output_field"));
 
+        let input_model_structure_text_field = TextInput::new()
+            .bind(info.window, &self.input_model_structure, &self)
+            .dom(&self.input_model_structure)
+            .with_id("input_model_field");
+
         let image = match &self.current_image {
             Some(image_id) => Dom::image(info.resources.get_image(image_id).unwrap())
                 .with_id("output_image"),
@@ -52,16 +87,20 @@ impl Layout for AppData {
 
         let button = Button::with_label("Generate image").dom()
             .with_id("generate_button")
-            .with_callback(On::LeftMouseUp, Callback(generate_image_callback));
+            .with_callback(On::LeftMouseDown, Callback(generate_image_callback));
 
-        let status_label = Label::new(format!("{}", self.status)).dom();
+        let status_label = Label::new(format!("{}", self.status)).dom()
+            .with_id("status_label");
 
         Dom::div().with_id("wrapper")
             .with_child(file_names)
-            .with_child(image)
-            .with_child(Dom::div().with_id("bottom_wrapper")
+            .with_child(Dom::div().with_id("middle_wrapper")
                 .with_child(button)
                 .with_child(status_label)
+            )
+            .with_child(Dom::div().with_id("bottom_wrapper")
+                .with_child(input_model_structure_text_field)
+                .with_child(image)
             )
     }
 }
@@ -72,10 +111,10 @@ fn generate_image_callback(app_state: &mut AppState<AppData>, _window_info: Wind
     use std::path::Path;
     use std::io::Cursor;
     use std::env;
-
     let old_image_id = app_state.data.lock().unwrap().current_image.clone();
     let current_input_path = app_state.data.lock().unwrap().input_file_name.text.clone();
     let current_output_path = app_state.data.lock().unwrap().output_file_name.text.clone();
+    let current_input_field= app_state.data.lock().unwrap().input_model_structure.text.clone();
 
     let current_working_directory = env::current_dir().ok()
         .and_then(|p| Some(p.to_str().unwrap_or("/").to_string())).unwrap_or_default();
@@ -84,6 +123,7 @@ fn generate_image_callback(app_state: &mut AppState<AppData>, _window_info: Wind
 
     // Delete the old image if necessary
     app_state.delete_image(IMAGE_ID);
+
 
     // Clear status
     app_state.data.modify(|state| state.status = String::from(""));
@@ -112,7 +152,11 @@ fn generate_image_callback(app_state: &mut AppState<AppData>, _window_info: Wind
     }
 
     //========== Correct Implementation ==========
-    /*let (classes, relations) = match parser::init(&real_input_path) {
+    let (classes, relations) = match parser::init
+        (if !current_input_field.is_empty() { &current_input_field } else { &real_input_path },
+         !current_input_field.is_empty()
+        )
+        {
         Ok(cr) => cr,
         Err(e) => {
             println!("ERROR: Cannot load file \"{}\": {}.", real_input_path, e);
@@ -120,11 +164,11 @@ fn generate_image_callback(app_state: &mut AppState<AppData>, _window_info: Wind
                 format!("{}ERROR: Cannot load file \"{}\": {}.\n", state.status, real_input_path, e));
             return UpdateScreen::Redraw;
         }
-    };*/
+    };
     //========================================
 
     //========== Test Implementation ==========
-    let mut classes: Vec<Class> = Vec::new();
+    /*let mut classes: Vec<Class> = Vec::new();
     let mut relations: Vec<Relation> = Vec::new();
     let mut content_lines: Vec<String> = Vec::new();
     let mut content_decor: Vec<TextDecoration> = Vec::new();
@@ -168,7 +212,7 @@ fn generate_image_callback(app_state: &mut AppState<AppData>, _window_info: Wind
             to_class: String::from("Klasse2"),
             to_class_card: String::from("*")
         };
-    relations.push(relation);
+    relations.push(relation);*/
     //========================================
 
     let (mut image_buf, dim) = generator::generate_pic(

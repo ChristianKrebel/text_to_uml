@@ -15,8 +15,8 @@ use defines::*;
 
 
 // Testing Modul. Delete this function and implement your own Hannes.
-pub fn init(filename: &str) -> Result<(Vec<Class>, Vec<Relation>), io::Error> {
-    let mut lines = read_file(filename)?;
+pub fn init(text_input: &str, is_raw: bool) -> Result<(Vec<Class>, Vec<Relation>), io::Error> {
+    let mut lines = if is_raw { read_text(text_input)? } else { read_file(text_input)? };
     Ok(parse_lines(&mut lines))
 }
 
@@ -356,4 +356,8 @@ fn read_file(filename: &str) -> Result<Vec<String>, io::Error> {
     use std::fs;
     let contents = fs::read_to_string(filename)?;
     Ok(contents.lines().filter(|line| !line.is_empty()).map(|line| line.to_string()).collect())
+}
+
+fn read_text(text: &str) -> Result<Vec<String>, io::Error> {
+    Ok(text.lines().filter(|line| !line.is_empty()).map(|line| line.to_string()).collect())
 }
