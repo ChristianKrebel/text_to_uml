@@ -11,8 +11,8 @@ const CUSTOM_CSS: &str = "
     #input_label { padding-left: 4px; padding-right: 4px; }
     #output_field { padding-left: 4px; padding-right: 4px; }
     #output_label { padding-left: 4px; padding-right: 4px; }
-    #input_model_field { height: 400px; background-color: yellow; }
-    #output_image { width: [[ prop_width_output_image | 500px ]] }
+    #input_model_field { height: 400px; min-width: 200px; background-color: yellow; }
+    #output_image {  }
     #generate_button {  }
     #status_label { background-color: red; line-height: 1.3pt; }
     #placeholder_image { background-color: blue; font-size: 20px; color: black; }
@@ -247,5 +247,11 @@ fn generate_image_callback(app_state: &mut AppState<AppData>, _window_info: Wind
 pub fn start() {
     let app = App::new(AppData::default(), AppConfig::default());
     let css = css::override_native(CUSTOM_CSS).unwrap();
-    app.run(Window::new(WindowCreateOptions::default(), css).unwrap()).unwrap();
+
+
+
+    let mut window_options = WindowCreateOptions::default();
+    window_options.state.title = "TextToUML".into();
+    window_options.state.is_maximized = true.into();
+    app.run(Window::new(window_options, css).unwrap()).unwrap();
 }
