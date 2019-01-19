@@ -15,326 +15,43 @@ use std::mem;
 use std::num::Wrapping;
 use self::rand::Rng;
 
+
+
 use self::image::{DynamicImage, GenericImage, Pixel, Rgba, RgbaImage, ImageFormat};
 
+pub struct ClassLayout {
+    lt: XY,
+    rt: XY,
+    lb: XY,
+    rb: XY,
+    height: u32,
+    width: u32,
+    uneven: bool
+}
+
+struct Colors {
+    white: image::Bgra<u8>,
+    black: image::Bgra<u8>,
+}
+struct Scales {
+    one: Scale,
+    two: Scale,
+}
+pub struct XY {
+    x: u32,
+    y: u32,
+}
+pub struct General {
+    imgxy: XY,
+    colors: Colors,
+    scales : Scales,
+}
 
 
 
 
-pub fn generate_layout(class_vec: &[Class], rel_vec: &[Relation]) -> (image::ImageBuffer<image::Bgra<u8>, Vec<u8>>, (u32, u32)) {
+pub fn get_image(class_vec: &[Class], rel_vec: &[Relation]) -> (image::ImageBuffer<image::Bgra<u8>, Vec<u8>>, (u32, u32)) {
 
-    // ------ Layouting all classes ------
-    let mut class_layout_vec: Vec<ClassLayout> = Vec::new();
-    let mut class_count = class_vec.len();
-
-    // calc distance between upper and lower classes
-    let RELATION_GAP: u32 = ((::RELATION_STICK * 2) as f32 + (rel_vec.len() as f32 + 1.0) * ::REL_GAP_DISTANCE) as u32;
-
-    // calc heights for upper half of classes (uneven)
-    let mut greatest_height_first_half: u32 = 0;
-    for (i,c) in class_vec.iter().enumerate() {
-        let mut greatest_height: u32 = 0;
-        if i % 2 != 0 {
-            if !c.class_name.is_empty() {
-                greatest_height += 1;
-            }
-            if !c.class_stereotype.is_empty() {
-                greatest_height += 1;
-            }
-            greatest_height += c.content_lines.len() as u32;
-        }
-        if greatest_height > greatest_height_first_half {
-            greatest_height_first_half = greatest_height;
-        }
-    }
-
-    // calc heights for lower half of classes (even)
-    let mut greatest_height_second_half: u32 = 0;
-    for (i,c) in class_vec.iter().enumerate() {
-        let mut greatest_height: u32 = 0;
-        if i % 2 == 0 {
-            if !c.class_name.is_empty() {
-                greatest_height += 1;
-            }
-            if !c.class_stereotype.is_empty() {
-                greatest_height += 1;
-            }
-            greatest_height += c.content_lines.len() as u32;
-        }
-        if greatest_height > greatest_height_second_half {
-            greatest_height_second_half = greatest_height;
-        }
-    }
-
-    greatest_height_first_half *= ::LINE_HEIGHT;
-    greatest_height_second_half *= ::LINE_HEIGHT;
-    let mut base_line_first_half: u32 = greatest_height_first_half + 50;
-    let mut top_line_second_half: u32 = if class_count == 1
-        {base_line_first_half} else {base_line_first_half + RELATION_GAP};
-
-
-    let mut last_left_distance_uneven: u32 = 50;
-    let mut last_left_distance_even: u32 = 50;
-
-    for (i,c) in class_vec.iter().enumerate() {
-
-        let mut greatest_width: u32 = 0;
-        for line in c.content_lines.iter() {
-            if line.len() as u32 > greatest_width {
-                greatest_width = line.len() as u32;
-            }
-        }
-        if !c.class_name.is_empty() {
-            if c.class_name.len() as u32 > greatest_width {
-                greatest_width = c.class_name.len() as u32;
-            }
-        }
-        if !c.class_stereotype.is_empty() {
-            if c.class_stereotype.len() as u32 > greatest_width {
-                greatest_width = c.class_stereotype.len() as u32;
-            }
-        }
-        greatest_width *= ::LETTER_WIDTH;
-
-        let mut height: u32 = 0;
-
-            if !c.class_name.is_empty() {
-                height += 1;
-            }
-            if !c.class_stereotype.is_empty() {
-                height += 1;
-            }
-            height += c.content_lines.len() as u32;
-
-        height *= ::LINE_HEIGHT;
-
-        let mut lb: XY = XY {x: 0, y: 0};
-        let mut rb: XY = XY {x: 0, y: 0};
-        let mut lt: XY = XY {x: 0, y: 0};
-        let mut rt: XY = XY {x: 0, y: 0};
-        if i % 2 != 0 {
-            lb = XY {x: last_left_distance_uneven, y: base_line_first_half};
-            rb = XY {x: &lb.x + &greatest_width, y: lb.y};
-            lt = XY {x: lb.x, y: &lb.y - &height};
-            rt = XY {x: rb.x, y: lt.y};
-        } else {
-            lt = XY {x: last_left_distance_even, y: top_line_second_half};
-            rt = XY {x: &lt.x + &greatest_width, y: lt.y};
-            lb = XY {x: lt.x, y: &lt.y + &height};
-            rb = XY {x: rt.x, y: lb.y};
-        }
-
-        let uneven: bool = if i % 2 != 0 {true} else {false};
-
-
-        let class_layout: ClassLayout = ClassLayout {
-            lt: lt,
-            rt: rt,
-            lb: lb,
-            rb: rb,
-            height: height,
-            width: greatest_width,
-            uneven: uneven,
-        };
-        class_layout_vec.push(class_layout);
-        if i % 2 != 0 {
-            last_left_distance_uneven += &greatest_width + 100;
-        } else {
-            last_left_distance_even += &greatest_width + 100;
-        }
-    }
-
-    // ------------
-
-
-
-    // Calc picture bounds
-    let mut greatest_last_left_distance: u32 = if last_left_distance_uneven > last_left_distance_even
-        {last_left_distance_uneven - 50} else {last_left_distance_even - 50};
-    let xy: XY = XY {
-        x: greatest_last_left_distance,
-        y: top_line_second_half + greatest_height_second_half + 50,
-    };
-
-    // Colors
-    let colors: Colors = Colors {
-        white: image::Bgra([255u8,255u8,255u8,255u8]),
-        black: image::Bgra([0u8, 0u8, 0u8, 255u8]),
-    };
-
-    // Fonts
-    let mut font_vec: Vec<Font> = Vec::new();
-
-    // Load the font
-    let font_data = include_bytes!("../fonts/UbuntuMono-R.ttf");
-    // This only succeeds if collection consists of one font
-    font_vec.push(Font::from_bytes(font_data as &[u8]).expect("Error constructing Font"));
-    // Load the font
-    let font_data2 = include_bytes!("../fonts/UbuntuMono-RI.ttf");
-    // This only succeeds if collection consists of one font
-    font_vec.push(Font::from_bytes(font_data2 as &[u8]).expect("Error constructing Font"));
-    // Load the font
-    let font_data3 = include_bytes!("../fonts/UbuntuMono-B.ttf");
-    // This only succeeds if collection consists of one font
-    font_vec.push(Font::from_bytes(font_data3 as &[u8]).expect("Error constructing Font"));
-    // Load the font
-    let font_data4 = include_bytes!("../fonts/UbuntuMono-BI.ttf");
-    // This only succeeds if collection consists of one font
-    font_vec.push(Font::from_bytes(font_data4 as &[u8]).expect("Error constructing Font"));
-
-    // The font size to use
-    let scales: Scales = Scales {
-        one: Scale::uniform(18.0),
-        two: Scale::uniform(26.0),
-    };
-
-
-    // Create a new ImgBuf with width: imgx and height: imgy
-    let mut imgbuf = image::DynamicImage::new_rgba8(xy.x, xy.y).to_bgra();
-
-    // Most important general info
-    let general: General = General {
-        imgxy: xy,
-        colors: colors,
-        scales: scales,
-    };
-
-    // Draw background
-    draw_filled_rect_mut(
-        &mut imgbuf, imageproc::rect::Rect::at(0, 0).of_size(general.imgxy.x, general.imgxy.y),
-        general.colors.white);
-
-
-    // ------ DRAW ------
-    for (i, c) in class_vec.iter().enumerate() {
-        draw_class(&mut imgbuf, &general, &font_vec, &c, &class_layout_vec[i]);
-    }
-
-    // ------ Layouting all relations ------
-
-    let mut rel_gap_first = ::REL_GAP_DISTANCE;
-    let mut rel_gap_second = ::REL_GAP_DISTANCE;
-
-    let mut all_to_class_rels_vec: Vec<Vec<bool>> = Vec::new();
-    for (i, c) in class_vec.iter().enumerate() {
-        let mut empty_vec: Vec<bool> = Vec::new();
-        empty_vec.push(true);
-        all_to_class_rels_vec.push(empty_vec);
-    }
-
-
-    for (i, c) in class_vec.iter().enumerate() {
-        let mut to_class_rels_vec: Vec<bool> = Vec::new();
-        // Durch alle Relationen
-        for (index, rel) in rel_vec.iter().enumerate() {
-            // Wenn Relation eingeht, dann speichere Index der Relation
-            if rel.to_class == c.class_name {
-                to_class_rels_vec.push(false);
-            }
-        }
-        all_to_class_rels_vec[i] = to_class_rels_vec;
-    }
-
-
-    // Durch alle Klassen
-    for (i,c) in class_vec.iter().enumerate() {
-        let mut rel_starts: Vec<XY> = Vec::new();
-        let mut rel_starts_stepsize: u32;
-        let mut rel_ends_stepsize: u32;
-        let mut rels_indexes: Vec<usize> = Vec::new();
-        let mut rels_indexes2: Vec<usize> = Vec::new();
-
-        // Durch alle Relationen
-        for (index, rel) in rel_vec.iter().enumerate() {
-            // Wenn Relation ausgeht, dann speichere Index der Relation
-            if rel.from_class == c.class_name {
-                rels_indexes.push(index);
-            }
-            // Wenn Relation eingeht, dann speichere Index der Relation
-            if rel.to_class == c.class_name {
-                rels_indexes2.push(index);
-            }
-        }
-
-
-        rel_starts_stepsize = (class_layout_vec[i].width/2) / (rels_indexes.len() as u32 + 1);
-
-
-        let mut x_start: u32 = 0;
-        let mut y_start: u32 = 0;
-        let mut x_end: u32 = 0;
-        let mut y_end: u32 = 0;
-
-        if class_layout_vec[i].uneven {
-            x_start = class_layout_vec[i].lb.x;
-            y_start = class_layout_vec[i].lb.y;
-        } else {
-            x_start = class_layout_vec[i].lt.x;
-            y_start = class_layout_vec[i].lt.y;
-        }
-
-
-
-        // Durch alle Indexe der Relationen, die aus der Klasse gehen^
-        for index in rels_indexes {
-
-            // Durch alle Relationen
-            for (l, rel) in rel_vec.iter().enumerate() {
-                // Wenn Index der Relation der Klasse dem Index der durchlaufenden Relation ist
-                if index == l {
-
-                    x_start += rel_starts_stepsize;
-                    let mut xy1: XY = XY {
-                        x: x_start,
-                        y: y_start
-                    };
-
-                    let mut to_class_i: usize = 0;
-                    for (ci, c) in class_vec.iter().enumerate() {
-                        if c.class_name == rel.to_class {
-                            to_class_i = ci;
-                        }
-                    }
-                    rel_ends_stepsize = (class_layout_vec[to_class_i].width/2) / (all_to_class_rels_vec[to_class_i].len() as u32 + 1);
-                    if class_layout_vec[to_class_i].uneven {
-                        x_end = class_layout_vec[to_class_i].lb.x + (class_layout_vec[to_class_i].width/2);
-                        y_end = class_layout_vec[to_class_i].lb.y;
-                    } else {
-                        x_end = class_layout_vec[to_class_i].lt.x + (class_layout_vec[to_class_i].width/2);
-                        y_end = class_layout_vec[to_class_i].lt.y;
-                    }
-
-                    let mut multip: u32 = 1;
-                    for (i, vector) in all_to_class_rels_vec.iter_mut().enumerate() {
-                        if i == to_class_i {
-                            for l in 0..vector.len() {
-                                if vector[l] == true {
-                                    multip += 1;
-                                } else {
-                                    vector[l] = true;
-                                    break;
-                                }
-                            }
-                        }
-                    }
-                    x_end += rel_ends_stepsize * multip;
-                    let mut xy2: XY = XY {
-                        x: x_end,
-                        y: y_end
-                    };
-
-                    let mut zwerg = draw_rel(&mut imgbuf, &general, &font_vec,
-                                             &rel, &xy1, &xy2,
-                                             base_line_first_half,
-                                             rel_gap_first, rel_gap_second);
-                    rel_gap_first = zwerg[0];
-                    rel_gap_second = zwerg[1];
-                }
-            }
-        }
-    }
-
-    (imgbuf,(greatest_last_left_distance, top_line_second_half + greatest_height_second_half + 50))
 }
 
 pub fn draw_class(buffer: &mut image::ImageBuffer<image::Bgra<u8>, Vec<u8>>, general: &General, fonts: &Vec<Font>, class: &Class,

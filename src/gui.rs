@@ -215,7 +215,7 @@ fn generate_image_callback(app_state: &mut AppState<AppData>, _window_info: Wind
     relations.push(relation);*/
     //========================================
 
-    let (mut image_buf, dim) = generator::generate_pic(
+    let (mut image_buf, dim) = generator::generate_layout(
         &classes, &relations,
     );
 

@@ -1,5 +1,45 @@
 use std::collections::HashMap;
+use rusttype::{point, Font, Scale};
 
+//========== Structs and enums for layouting and drawing ==========
+#[derive(Debug)]
+pub struct ClassLayout {
+    pub lt: XY,
+    pub rt: XY,
+    pub lb: XY,
+    pub rb: XY,
+    pub height: u32,
+    pub width: u32,
+    pub uneven: bool
+}
+
+#[derive(Debug)]
+pub struct Colors {
+    pub white: image::Bgra<u8>,
+    pub black: image::Bgra<u8>,
+}
+
+#[derive(Debug)]
+pub struct Scales {
+    pub one: Scale,
+    pub two: Scale,
+}
+
+#[derive(Debug)]
+pub struct XY {
+    pub x: u32,
+    pub y: u32,
+}
+
+#[derive(Debug)]
+pub struct General {
+    pub imgxy: XY,
+    pub colors: Colors,
+    pub scales : Scales,
+}
+//========================================
+
+//========== Structs and enums for modelling ==========
 #[derive(Debug)]
 #[derive(PartialEq)]
 pub enum ClassType{
@@ -183,3 +223,4 @@ pub struct UseCaseModel{
     pub participants: Vec<Participant>,
     pub relations: Vec<UseCaseRelation>
 }
+//========================================
