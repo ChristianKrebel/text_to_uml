@@ -1,8 +1,8 @@
 #[allow(unused_variables, unused_mut, unused)]
-
-extern crate image;
 extern crate imageproc;
 extern crate rand;
+extern crate azul;
+extern crate image;
 
 use defines::*;
 
@@ -28,10 +28,8 @@ pub struct ClassLayout {
 }
 
 struct Colors {
-    white: image::Rgba<u8>,
-    black: image::Rgba<u8>,
-    red: image::Rgba<u8>,
-    blue: image::Rgba<u8>
+    white: image::Bgra<u8>,
+    black: image::Bgra<u8>,
 }
 struct Scales {
     one: Scale,
@@ -42,7 +40,6 @@ pub struct XY {
     y: u32,
 }
 pub struct General {
-    buffer: image::RgbaImage,
     imgxy: XY,
     colors: Colors,
     scales : Scales,
@@ -60,7 +57,7 @@ const ARROW_SIZE: u32 = 20;
 const ACTIVE_PADDING: u32 = PADDING_LEFT * 2;
 const CARD_DIST: u32 = 4;
 
-pub fn generate_pic(class_vec: &[Class], rel_vec: &[Relation]) -> RgbaImage {
+pub fn generate_pic(class_vec: &[Class], rel_vec: &[Relation]) -> (image::ImageBuffer<image::Bgra<u8>, Vec<u8>>, (u32, u32)) {
 
     // ------ Layouting all classes ------
     let mut class_layout_vec: Vec<ClassLayout> = Vec::new();
@@ -197,10 +194,8 @@ pub fn generate_pic(class_vec: &[Class], rel_vec: &[Relation]) -> RgbaImage {
 
     // Colors
     let colors: Colors = Colors {
-        white: Rgba([255u8, 255u8, 255u8, 255u8]),
-        black: Rgba([0u8, 0u8, 0u8, 255u8]),
-        red: Rgba([255u8, 0u8, 0u8, 127u8]),
-        blue: Rgba([0u8, 0u8, 255u8, 127u8]),
+        white: image::Bgra([255u8,255u8,255u8,255u8]),
+        black: image::Bgra([0u8, 0u8, 0u8, 255u8]),
     };
 
     // Fonts
@@ -231,11 +226,10 @@ pub fn generate_pic(class_vec: &[Class], rel_vec: &[Relation]) -> RgbaImage {
 
 
     // Create a new ImgBuf with width: imgx and height: imgy
-    let mut imgbuf = image::RgbaImage::new(xy.x, xy.y);
+    let mut imgbuf = image::DynamicImage::new_rgba8(xy.x, xy.y).to_bgra();
 
     // Most important general info
     let general: General = General {
-        buffer: image::RgbaImage::new(xy.x, xy.y),
         imgxy: xy,
         colors: colors,
         scales: scales,
@@ -376,10 +370,10 @@ pub fn generate_pic(class_vec: &[Class], rel_vec: &[Relation]) -> RgbaImage {
         }
     }
 
-    imgbuf
+    (imgbuf,(greatest_last_left_distance, top_line_second_half + greatest_height_second_half + 50))
 }
 
-pub fn draw_class(buffer: &mut image::RgbaImage, general: &General, fonts: &Vec<Font>, class: &Class,
+pub fn draw_class(buffer: &mut image::ImageBuffer<image::Bgra<u8>, Vec<u8>>, general: &General, fonts: &Vec<Font>, class: &Class,
                   class_layout: &ClassLayout) {
 
     //let &buffer = &general.buffer;
@@ -669,7 +663,7 @@ pub fn draw_class(buffer: &mut image::RgbaImage, general: &General, fonts: &Vec<
     }
 }
 
-pub fn draw_rel(buffer: &mut image::RgbaImage, general: &General, fonts: &Vec<Font>, rel: &Relation,
+pub fn draw_rel(buffer: &mut image::ImageBuffer<image::Bgra<u8>, Vec<u8>>, general: &General, fonts: &Vec<Font>, rel: &Relation,
                 start: &XY, end: &XY, base_first: u32, rel_gap_first: f32, rel_gap_second: f32) -> Vec<f32> {
 
     println!("from: {}, from card: {}", rel.from_class, rel.from_class_card);

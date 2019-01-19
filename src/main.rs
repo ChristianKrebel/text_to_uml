@@ -26,7 +26,7 @@ type InputFilePath = String;
 type OutputFilePath = String;
 
 fn get_cli_args(default_input_path: &str, default_output_path: &str)
--> (InputFilePath, OutputFilePath)
+                -> (InputFilePath, OutputFilePath)
 {
     use std::env;
 
