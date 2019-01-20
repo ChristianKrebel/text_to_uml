@@ -1,5 +1,7 @@
 use std::collections::HashMap;
 use rusttype::{point, Font, Scale};
+use std::fmt;
+use std::error::Error as StdError;
 
 //========== Structs and enums for layouting and drawing ==========
 #[derive(Debug)]
@@ -37,6 +39,36 @@ pub struct General {
     pub colors: Colors,
     pub scales : Scales,
 }
+//========================================
+
+//======== Error types for parsing =======
+
+#[derive(Debug)]
+pub enum ParseError {
+    NotFound,
+    InternalServerError,
+}
+
+
+impl fmt::Display for ParseError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match *self {
+            Error::NotFound => f.write_str("NotFound"),
+            Error::InternalServerError => f.write_str("InternalServerError"),
+        }
+    }
+}
+impl StdError for ParseError {
+    fn description(&self) -> &str {
+        match *self {
+            Error::NotFound => "Record not found",
+            Error::InternalServerError => "Internal server error",
+        }
+    }
+}
+
+
+
 //========================================
 
 //========== Structs and enums for modelling ==========

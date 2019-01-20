@@ -4,6 +4,7 @@ use azul::widgets::{button::Button, label::Label, text_input::{TextInput, TextIn
 use generator;
 use parser;
 use drawer;
+use reader;
 use defines::*;
 
 const CUSTOM_CSS: &str = "
@@ -153,7 +154,44 @@ fn generate_image_callback(app_state: &mut AppState<AppData>, _window_info: Wind
     }
 
     //========== Correct Implementation ==========
-    let model_type = parser::get_model_type();
+
+    // Get lines either from file or from text input
+
+    let mut lines: Vec<String> = None;
+
+    if !current_input_field.is_empty() {
+        lines = match reader::read_from_text(&current_input_field) {
+            Ok(val) => val,
+            Err(err) => {app_state.data.modify(|state| state.status =
+                format!("{}ERROR: Cannot read input text: {}\n", state.status, err));
+                return UpdateScreen::Redraw;
+            }
+        };
+    } else{
+        lines = match reader::read_from_file(&real_input_path) {
+            Ok(val) => val,
+            Err(err) => {app_state.data.modify(|state| state.status =
+                format!("{}ERROR: Cannot read from file \"{}\": {}\n", state.status, real_input_path, err));
+                return UpdateScreen::Redraw;
+            }
+        };
+    }
+
+    for line in lines.iter(){
+        println!("lines: {}", line);
+    }
+
+    let model_type: String = parser::get_model_type(&lines);
+
+    // Check for model type
+    if(){
+        let class_model = match parser::parse_class_model(&lines){
+            Ok(val) => val,
+            Err(err) =>
+        }
+    }
+    //-----------------------------------------------
+
 
     let (classes, relations) = match parser::init
         (if !current_input_field.is_empty() { &current_input_field } else { &real_input_path },
@@ -218,7 +256,6 @@ fn generate_image_callback(app_state: &mut AppState<AppData>, _window_info: Wind
     relations.push(relation);*/
     //========================================
 
-    if model."ClassModel" { }
 
     let (mut image_buf, dim) = drawer::get_image(
 

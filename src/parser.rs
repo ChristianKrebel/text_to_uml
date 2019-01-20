@@ -14,15 +14,23 @@ use std::process::exit;
 use defines::*;
 
 
-pub fn init_class_model(text_input: &str, is_raw: bool) -> Result<(Vec<Class>, Vec<Relation>), io::Error> {
-    let mut lines = if is_raw { read_text(text_input)? } else { read_file(text_input)? };
-    for line in lines.iter(){
-        println!("lines: {}", line);
-    }
-    Ok(parse_lines(&mut lines))
+pub fn get_model_type(lines: &[String]) -> String {
+    return "ClassDiagram".to_string();
 }
 
-fn parse_lines(lines: &mut Vec<String>) -> (Vec<Class>, Vec<Relation>) {
+pub fn parse_object_model(lines: &[String]) -> Result<ObjectModel, ParseError> {
+
+}
+
+pub fn parse_package_model(lines: &[String]) -> Result<PackageModel, ParseError> {
+
+}
+
+pub fn parse_use_case_model(lines: &[String]) -> Result<UseCaseModel, ParseError> {
+
+}
+
+pub fn parse_class_model(lines: &[String]) -> Result<ClassModel, ParseError> {
 
     let mut classes = Vec::new();
     let mut relations = Vec::new();
@@ -351,19 +359,7 @@ fn parse_lines(lines: &mut Vec<String>) -> (Vec<Class>, Vec<Relation>) {
         }
     }
 
-    (classes, relations)
-}
+    let cm: ClassModel = ClassModel {classes, relations};
 
-fn read_file(filename: &str) -> Result<Vec<String>, io::Error> {
-    use std::fs;
-    let contents = fs::read_to_string(filename)?;
-    Ok(contents.lines().map(|line| line.to_string()).collect())
-}
-
-fn read_text(text: &str) -> Result<Vec<String>, io::Error> {
-    Ok(text.lines().map(|line| line.to_string()).collect())
-}
-
-pub fn get_model_type() -> ModelType {
-    ModelType::ClassModel //TODO
+    Ok(cm)
 }
