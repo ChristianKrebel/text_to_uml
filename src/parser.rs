@@ -14,8 +14,7 @@ use std::process::exit;
 use defines::*;
 
 
-// Testing Modul. Delete this function and implement your own Hannes.
-pub fn init(text_input: &str, is_raw: bool) -> Result<(Vec<Class>, Vec<Relation>), io::Error> {
+pub fn init_class_model(text_input: &str, is_raw: bool) -> Result<(Vec<Class>, Vec<Relation>), io::Error> {
     let mut lines = if is_raw { read_text(text_input)? } else { read_file(text_input)? };
     for line in lines.iter(){
         println!("lines: {}", line);
@@ -363,4 +362,8 @@ fn read_file(filename: &str) -> Result<Vec<String>, io::Error> {
 
 fn read_text(text: &str) -> Result<Vec<String>, io::Error> {
     Ok(text.lines().map(|line| line.to_string()).collect())
+}
+
+pub fn get_model_type() -> ModelType {
+    ModelType::ClassModel //TODO
 }

@@ -18,10 +18,7 @@ use self::rand::Rng;
 use self::image::{DynamicImage, GenericImage, Pixel, Rgba, RgbaImage, ImageFormat};
 
 
-
-
-
-pub fn generate_layout(class_vec: &[Class], rel_vec: &[Relation]) -> (image::ImageBuffer<image::Bgra<u8>, Vec<u8>>, (u32, u32)) {
+pub fn generate_class_model_layout(class_vec: &[Class], rel_vec: &[Relation]) -> (Vec<Class>, Vec<Relation>, (u32, u32)) {
 
     // ------ Layouting all classes ------
     let mut class_layout_vec: Vec<ClassLayout> = Vec::new();
@@ -156,54 +153,6 @@ pub fn generate_layout(class_vec: &[Class], rel_vec: &[Relation]) -> (image::Ima
         y: top_line_second_half + greatest_height_second_half + 50,
     };
 
-    // Colors
-    let colors: Colors = Colors {
-        white: image::Bgra([255u8,255u8,255u8,255u8]),
-        black: image::Bgra([0u8, 0u8, 0u8, 255u8]),
-    };
-
-    // Fonts
-    let mut font_vec: Vec<Font> = Vec::new();
-
-    // Load the font
-    let font_data = include_bytes!("../fonts/UbuntuMono-R.ttf");
-    // This only succeeds if collection consists of one font
-    font_vec.push(Font::from_bytes(font_data as &[u8]).expect("Error constructing Font"));
-    // Load the font
-    let font_data2 = include_bytes!("../fonts/UbuntuMono-RI.ttf");
-    // This only succeeds if collection consists of one font
-    font_vec.push(Font::from_bytes(font_data2 as &[u8]).expect("Error constructing Font"));
-    // Load the font
-    let font_data3 = include_bytes!("../fonts/UbuntuMono-B.ttf");
-    // This only succeeds if collection consists of one font
-    font_vec.push(Font::from_bytes(font_data3 as &[u8]).expect("Error constructing Font"));
-    // Load the font
-    let font_data4 = include_bytes!("../fonts/UbuntuMono-BI.ttf");
-    // This only succeeds if collection consists of one font
-    font_vec.push(Font::from_bytes(font_data4 as &[u8]).expect("Error constructing Font"));
-
-    // The font size to use
-    let scales: Scales = Scales {
-        one: Scale::uniform(18.0),
-        two: Scale::uniform(26.0),
-    };
-
-
-    // Create a new ImgBuf with width: imgx and height: imgy
-    let mut imgbuf = image::DynamicImage::new_rgba8(xy.x, xy.y).to_bgra();
-
-    // Most important general info
-    let general: General = General {
-        imgxy: xy,
-        colors: colors,
-        scales: scales,
-    };
-
-    // Draw background
-    draw_filled_rect_mut(
-        &mut imgbuf, imageproc::rect::Rect::at(0, 0).of_size(general.imgxy.x, general.imgxy.y),
-        general.colors.white);
-
 
     // ------ DRAW ------
     for (i, c) in class_vec.iter().enumerate() {
@@ -334,7 +283,7 @@ pub fn generate_layout(class_vec: &[Class], rel_vec: &[Relation]) -> (image::Ima
         }
     }
 
-    (imgbuf,(greatest_last_left_distance, top_line_second_half + greatest_height_second_half + 50))
+    (greatest_last_left_distance, top_line_second_half + greatest_height_second_half + 50)
 }
 
 pub fn draw_class(buffer: &mut image::ImageBuffer<image::Bgra<u8>, Vec<u8>>, general: &General, fonts: &Vec<Font>, class: &Class,

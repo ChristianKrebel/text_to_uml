@@ -5,6 +5,7 @@ extern crate azul;
 extern crate image;
 
 use defines::*;
+use generator::*;
 
 use self::imageproc::rect::*;
 use self::imageproc::drawing::*;
@@ -15,49 +16,67 @@ use std::mem;
 use std::num::Wrapping;
 use self::rand::Rng;
 
-
-
 use self::image::{DynamicImage, GenericImage, Pixel, Rgba, RgbaImage, ImageFormat};
 
-pub struct ClassLayout {
-    lt: XY,
-    rt: XY,
-    lb: XY,
-    rb: XY,
-    height: u32,
-    width: u32,
-    uneven: bool
-}
 
-struct Colors {
-    white: image::Bgra<u8>,
-    black: image::Bgra<u8>,
-}
-struct Scales {
-    one: Scale,
-    two: Scale,
-}
-pub struct XY {
-    x: u32,
-    y: u32,
-}
-pub struct General {
-    imgxy: XY,
-    colors: Colors,
-    scales : Scales,
-}
+pub fn get_image(model: Model) -> (image::ImageBuffer<image::Bgra<u8>, Vec<u8>>, (u32, u32)) {
+
+    //let (dim_x, dim_y) = generate_layout(class_vec, rel_vec);
+
+    // Create a new ImgBuf with width: imgx and height: imgy
+    let mut img_buf = image::DynamicImage::new_rgba8(dim_x, dim_y).to_bgra();
+
+    // Colors
+    let colors: Colors = Colors {
+        white: image::Bgra([255u8,255u8,255u8,255u8]),
+        black: image::Bgra([0u8, 0u8, 0u8, 255u8]),
+    };
+
+    // Fonts
+    let mut font_vec: Vec<Font> = Vec::new();
+
+    // Load the font
+    let font_data = include_bytes!("../fonts/UbuntuMono-R.ttf");
+    // This only succeeds if collection consists of one font
+    font_vec.push(Font::from_bytes(font_data as &[u8]).expect("Error constructing Font"));
+    // Load the font
+    let font_data2 = include_bytes!("../fonts/UbuntuMono-RI.ttf");
+    // This only succeeds if collection consists of one font
+    font_vec.push(Font::from_bytes(font_data2 as &[u8]).expect("Error constructing Font"));
+    // Load the font
+    let font_data3 = include_bytes!("../fonts/UbuntuMono-B.ttf");
+    // This only succeeds if collection consists of one font
+    font_vec.push(Font::from_bytes(font_data3 as &[u8]).expect("Error constructing Font"));
+    // Load the font
+    let font_data4 = include_bytes!("../fonts/UbuntuMono-BI.ttf");
+    // This only succeeds if collection consists of one font
+    font_vec.push(Font::from_bytes(font_data4 as &[u8]).expect("Error constructing Font"));
+
+    // The font size to use
+    let scales: Scales = Scales {
+        one: Scale::uniform(18.0),
+        two: Scale::uniform(26.0),
+    };
 
 
 
 
-pub fn get_image(class_vec: &[Class], rel_vec: &[Relation]) -> (image::ImageBuffer<image::Bgra<u8>, Vec<u8>>, (u32, u32)) {
+    // Most important general info
+    let general: General = General {
+        imgxy: xy,
+        colors: colors,
+        scales: scales,
+    };
 
+    // Draw background
+    draw_filled_rect_mut(
+        &mut imgbuf, imageproc::rect::Rect::at(0, 0).of_size(general.imgxy.x, general.imgxy.y),
+        general.colors.white);
 }
 
 pub fn draw_class(buffer: &mut image::ImageBuffer<image::Bgra<u8>, Vec<u8>>, general: &General, fonts: &Vec<Font>, class: &Class,
                   class_layout: &ClassLayout) {
 
-    //let &buffer = &general.buffer;
     let x = general.imgxy.x;
     let y = general.imgxy.y;
     let colors = &general.colors;

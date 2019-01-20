@@ -223,4 +223,32 @@ pub struct UseCaseModel{
     pub participants: Vec<Participant>,
     pub relations: Vec<UseCaseRelation>
 }
+
+trait Modeltype {
+    fn get_type(&self) -> String;
+}
+
+impl Modeltype for ClassModel {
+    fn get_type(&self) -> String {
+        "class".to_string()
+    }
+}
+
+impl Modeltype for ObjectModel {
+    fn get_type(&self) -> String {
+        "object".to_string()
+    }
+}
+
+impl Modeltype for PackageModel {
+    fn get_type(&self) -> String {
+        "package".to_string()
+    }
+}
+
+impl Modeltype for UseCaseModel {
+    fn get_type(&self) -> String {
+        "usecase".to_string()
+    }
+}
 //========================================

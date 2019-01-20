@@ -3,6 +3,7 @@ use azul::prelude::RawImageFormat;
 use azul::widgets::{button::Button, label::Label, text_input::{TextInput, TextInputState}};
 use generator;
 use parser;
+use drawer;
 use defines::*;
 
 const CUSTOM_CSS: &str = "
@@ -152,6 +153,8 @@ fn generate_image_callback(app_state: &mut AppState<AppData>, _window_info: Wind
     }
 
     //========== Correct Implementation ==========
+    let model_type = parser::get_model_type();
+
     let (classes, relations) = match parser::init
         (if !current_input_field.is_empty() { &current_input_field } else { &real_input_path },
          !current_input_field.is_empty()
@@ -215,8 +218,10 @@ fn generate_image_callback(app_state: &mut AppState<AppData>, _window_info: Wind
     relations.push(relation);*/
     //========================================
 
-    let (mut image_buf, dim) = generator::generate_layout(
-        &classes, &relations,
+    if model."ClassModel" { }
+
+    let (mut image_buf, dim) = drawer::get_image(
+
     );
 
     if current_output_path.is_empty() {

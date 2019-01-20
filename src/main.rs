@@ -6,6 +6,7 @@ extern crate rand;
 
 pub(crate) mod parser;
 pub(crate) mod generator;
+pub(crate) mod drawer;
 mod gui;
 mod defines;
 use defines::*;
