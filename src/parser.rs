@@ -1,5 +1,4 @@
 #![allow(dead_code)]
-#[macro_use]
 
 use std::fs::File;
 use std::io::{Write, BufReader, BufRead};
@@ -11,157 +10,30 @@ use std::env;
 use std::io::prelude::*;
 use std::str::*;
 use std::process::exit;
-use std::fs;
-use std::fmt;
-use nom::IResult;
-use std::fmt::Debug;
 
 use defines::*;
 
 
-/*fn dump<T: Debug>(res: IResult<&str,T>) {
-    match res {
-        IResult::Done(rest, value) => {println!("Done {:?} {:?}",rest,value)},
-        IResult::Error(err) => {println!("Err {:?}",err)},
-        IResult::Incomplete(needed) => {println!("Needed {:?}",needed)}
-    }
-}*/
-fn confirm_result<T: Debug>(res: &Result<(&str, T), nom::Err<&str>>, message_on_failure: &str) -> bool{
-    match res{
-        Ok(v) => {
-            println!("Parsed successfully: {:?}", v);
-            return true;
-        },
-        Err(e) => {
-            match e{
-                nom::Err::Incomplete(n) => println!("Incomplete: {:?}", n),
-                nom::Err::Error(e) => {
-                    //println!("Error while reading Tags: ErrorKind: {}", e.into_error_kind().description());
-                    println!("Error while parsing: {}", message_on_failure);
-                },
-                nom::Err::Failure(e) => println!("Failure")
-            }
-            return false;
-        }
-    }
+pub fn get_model_type(lines: &[String]) -> String {
+    return "ClassDiagram".to_string();
 }
 
-fn abort_on_failure(success: bool){
-    if !success{
-        println!("Aborting parsing...");
-        exit(-1);
-    }
-}
-
-pub fn init(filename: &str) -> String{
-    named!(model_end<&str, &str>,
-        ws!(tag_s!("/Model"))
-    );
-
-    named!(cd_model_type<&str, &str>,
-        ws!(tag_s!("Model:ClassDiagram"))
-    );
-
-    named!(cd_horizontal_line<&str, &str>,
-        ws!(tag_s!("--"))
-    );
-
-    named!(cd_visibility<&str, &str>,
-        ws!(alt!(
-            tag_s!("public") |
-            tag_s!("protected") |
-            tag_s!("package") |
-            tag_s!("private")
-        ))
-    );
-
-    named!(cd_var_type<&str, &str>,
-        do_parse!(
-            take_while!(tag_s!(" ")) >>
-            ret: take_until!(" ") >>
-            (ret)
-        )
-    );
-
-    named!(cd_var_name<&str, &str>,
-        do_parse!(
-            take_while!(tag_s!(" ")) >>
-            ret: take_until!(" ") >>
-            (ret)
-        )
-    );
-
-    named!(cd_member<&str, String>,
-        do_parse!(
-            visibility: cd_visibility >>
-            isStatic: opt!(ws!(tag_s!("static"))) >>
-            isFinal: opt!(ws!(tag_s!("final"))) >>
-            varType: cd_var_type >>
-            varName: cd_var_name >>
-            (format!("{} {} {} {} {}", visibility, isStatic.unwrap(), isFinal.unwrap(), varType, varName))
-        )
-    );
-
-    named!(class<&str, &str>,
-        tag_s!("asd")
-    );
-
-    named!(relation<&str, &str>,
-        tag_s!("asd")
-    );
-
-    named!(class_diagram<&str, &str>,
-        do_parse!(
-            cd_model_type >>
-            vec_classes: many_till!(class, ws!(tag_s!("Relations:"))) >>
-            vec_relations: many_till!(relation, model_end) >>
-            (
-                "asd"
-            )
-        )
-    );
-
-    named!(diagram<&str, &str>,
-        alt!(class_diagram)
-    );
-
-
-    let mut content = read_file(filename);
-    //println!("In main: content -> {}", content);
-
-
-    let mut res = cd_model_type(&content);
-
-    let mut success = confirm_result(&res, "Model not defined properly");
-    abort_on_failure(success);
-
-
-    let mut res2 = cd_member("public static final boolean someShit");
-
-    let mut success = confirm_result(&res2, "Line broken");
-
-
-
-    let str = String::from("done reading file.");
-    return str;
-}
-
-fn read_file(filename: &str) -> String{
-    //println!("In file {}", filename);
-
-    let contents = fs::read_to_string(filename)
-        .expect("Something went wrong reading the file");
-
-    //println!("With text:\n{}", contents);
-
-    return contents;
-}
-
-fn parse_class_diagram(){
+pub fn parse_object_model(lines: &[String]) -> Result<ObjectModel, ParseError> {
 
 }
 
-/*fn parse_lines(lines: &mut Vec<String>, classes: &mut Vec<Class>, relations: &mut Vec<Relation>){
+pub fn parse_package_model(lines: &[String]) -> Result<PackageModel, ParseError> {
+
+}
+
+pub fn parse_use_case_model(lines: &[String]) -> Result<UseCaseModel, ParseError> {
+
+}
+
+pub fn parse_class_model(lines: &[String]) -> Result<ClassModel, ParseError> {
+
+    let mut classes = Vec::new();
+    let mut relations = Vec::new();
 
     lines.reverse();
 
@@ -172,13 +44,10 @@ fn parse_class_diagram(){
         }
         let mut string = opt.unwrap();
         string.pop();
-        let mut lower = string.to_lowercase();
 
-        let mut split_lower = lower.split(":");
-        let split_list_lower: Vec<&str> = split_lower.collect();
-
-        let mut split_string = string.split(":");
-        let split_list_string: Vec<&str> = split_string.collect();
+        let lower = string.to_lowercase();
+        let split_list_lower: Vec<&str> = lower.split(":").collect();
+        let split_list_string: Vec<&str> = string.split(":").collect();
 
         if split_list_lower.len() == 1{
             //if split_list_lower.get(0).unwrap()
@@ -229,7 +98,7 @@ fn parse_class_diagram(){
                 exit(-1);
             }
 
-            let mut classes_split = classes_str.split(",");
+            let classes_split = classes_str.split(",");
             let classes_split_list: Vec<&str> = classes_split.collect();
 
             if *(classes_split_list.get(0).unwrap()) == classes_str || classes_split_list.len() > 2{ // Invalid
@@ -237,22 +106,21 @@ fn parse_class_diagram(){
                 exit(-1);
             }
 
+            let from_class_name = classes_split_list.get(0).unwrap();
+            let to_class_name = classes_split_list.get(1).unwrap();
 
-
-            let mut from_class_name = classes_split_list.get(0).unwrap();
-            let mut to_class_name = classes_split_list.get(1).unwrap();
-
-
-
-            let mut opt_cards = lines.pop();
+            let opt_cards = lines.pop();
 
             if !opt_cards.is_some() {
-                //println!("Error in relation syntax: Missing lines following class type definition3\nAborting...");
-                let mut from_card = "";
-                let mut to_card = "";
 
-                let mut relation: Relation = Relation {arrow_type, border_type: relation_border, from_class: String::from_str(*from_class_name).unwrap(), from_class_card: String::from_str(from_card).unwrap(), to_class: String::from_str(to_class_name).unwrap(), to_class_card: String::from_str(to_card).unwrap()};
-                println!("Full struct for relation: {:?}", relation);
+                let relation: Relation = Relation {
+                    arrow_type,
+                    border_type: relation_border,
+                    from_class: String::from_str(*from_class_name).unwrap(),
+                    from_class_card: String::new(),
+                    to_class: String::from_str(to_class_name).unwrap(),
+                    to_class_card: String::new(),
+                };
 
                 relations.push(relation);
                 continue;
@@ -261,15 +129,18 @@ fn parse_class_diagram(){
             let mut opt_cards_str = opt_cards.unwrap();
             opt_cards_str.pop();
 
-            //println!("opt_cards_str: '{}'", opt_cards_str);
+            // No multiplicities given.
+            if opt_cards_str.is_empty() {
 
-            if opt_cards_str.is_empty() { //No multiplicities given.
-                //println!("Error in relation syntax: Missing lines following class type definition4");
-                let mut from_card = "";
-                let mut to_card = "";
+                let mut relation: Relation = Relation {
+                    arrow_type,
+                    border_type: relation_border,
+                    from_class: String::from_str(*from_class_name).unwrap(),
+                    from_class_card: String::new(),
+                    to_class: String::from_str(to_class_name).unwrap(),
+                    to_class_card: String::new(),
+                };
 
-                let mut relation: Relation = Relation {arrow_type, border_type: relation_border, from_class: String::from_str(*from_class_name).unwrap(), from_class_card: String::from_str(from_card).unwrap(), to_class: String::from_str(to_class_name).unwrap(), to_class_card: String::from_str(to_card).unwrap()};
-                println!("Full struct for relation: {:?}", relation);
 
                 relations.push(relation);
                 continue;
@@ -338,7 +209,7 @@ fn parse_class_diagram(){
             /*
              * Class Name
              */
-            let mut class_name: String = split_list_string.get(1).unwrap().to_string();
+            let class_name: String = split_list_string.get(1).unwrap().to_string();
 
 
             /*
@@ -475,40 +346,20 @@ fn parse_class_diagram(){
                 content_decor.push(field_decor);
             }
 
-            let mut class: Class = Class {border_width: 0, class_name, class_type, content_lines, content_decor, class_stereotype};
-            println!("Full struct for class: {:?}", class);
+            let class: Class = Class {
+                border_width: 0,
+                class_name,
+                class_type,
+                content_lines,
+                content_decor,
+                class_stereotype
+            };
 
             classes.push(class);
         }
     }
-}*/
 
-/*fn read_file(vec: &mut Vec<String>, filename: &str){
-    let path = "input.txt";
-    /*let buffered = BufReader::new(file);
+    let cm: ClassModel = ClassModel {classes, relations};
 
-    for line in buffered.lines() {
-        let l = line.unwrap();
-        vec.push(l);
-    }*/
-
-    let mut f = File::open(path).expect("file not found");
-
-    let mut contents = String::new();
-    f.read_to_string(&mut contents).expect("something went wrong reading the file");
-
-    let mut split = contents.split("\n");
-    let list: Vec<&str> = split.collect();
-
-    let mut someInt = 0;
-    for string in list.iter(){
-        let mut string: String = String::from_str(*string).unwrap();
-        if string == "" && list.len()-1 == someInt{
-            continue;
-        }
-        vec.push(string);
-
-        someInt += 1;
-    }
-    //println!("With text:\n{}", contents);
-}*/
+    Ok(cm)
+}
