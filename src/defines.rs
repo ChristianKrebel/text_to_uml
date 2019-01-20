@@ -256,6 +256,24 @@ pub struct UseCaseModel{
     pub relations: Vec<UseCaseRelation>
 }
 
+#[derive(Debug)]
+pub struct ModelContainer{
+    pub model_type: ModelType,
+    pub class_model: ClassModel,
+    pub object_model: ObjectModel,
+    pub package_model: PackageModel,
+    pub use_case_model: UseCaseModel
+}
+
+#[derive(Debug)]
+#[derive(PartialEq)]
+pub enum ModelType{
+    ClassModel,
+    ObjectModel,
+    PackageModel,
+    UseCaseModel
+}
+
 trait Modeltype {
     fn get_type(&self) -> String;
 }

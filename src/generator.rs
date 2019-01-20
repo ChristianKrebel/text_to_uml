@@ -18,7 +18,7 @@ use self::rand::Rng;
 use self::image::{DynamicImage, GenericImage, Pixel, Rgba, RgbaImage, ImageFormat};
 
 
-pub fn generate_class_model_layout(class_vec: &[Class], rel_vec: &[Relation]) -> (Vec<Class>, Vec<Relation>, (u32, u32)) {
+pub fn generate_class_model_layout(class_vec: &[Class], rel_vec: &[Relation]) -> (u32, u32) {
 
     // ------ Layouting all classes ------
     let mut class_layout_vec: Vec<ClassLayout> = Vec::new();

@@ -5,7 +5,7 @@ extern crate azul;
 extern crate image;
 
 use defines::*;
-use generator::*;
+use generator;
 
 use self::imageproc::rect::*;
 use self::imageproc::drawing::*;
@@ -19,9 +19,19 @@ use self::rand::Rng;
 use self::image::{DynamicImage, GenericImage, Pixel, Rgba, RgbaImage, ImageFormat};
 
 
-pub fn get_image(model: Model) -> (image::ImageBuffer<image::Bgra<u8>, Vec<u8>>, (u32, u32)) {
+pub fn get_image(model: ModelContainer) -> (image::ImageBuffer<image::Bgra<u8>, Vec<u8>>, (u32, u32)) {
 
-    //let (dim_x, dim_y) = generate_layout(class_vec, rel_vec);
+    let (dim_x, dim_y) = None;
+
+    //
+    match model.model_type {
+        ModelType::ClassModel => {
+            (dim_x, dim_y) = generator::generate_class_model_layout(
+                &model.class_model.classes,
+                &model.class_model.relations
+            )
+        }
+    }
 
     // Create a new ImgBuf with width: imgx and height: imgy
     let mut img_buf = image::DynamicImage::new_rgba8(dim_x, dim_y).to_bgra();
@@ -59,8 +69,6 @@ pub fn get_image(model: Model) -> (image::ImageBuffer<image::Bgra<u8>, Vec<u8>>,
     };
 
 
-
-
     // Most important general info
     let general: General = General {
         imgxy: xy,
@@ -72,6 +80,8 @@ pub fn get_image(model: Model) -> (image::ImageBuffer<image::Bgra<u8>, Vec<u8>>,
     draw_filled_rect_mut(
         &mut imgbuf, imageproc::rect::Rect::at(0, 0).of_size(general.imgxy.x, general.imgxy.y),
         general.colors.white);
+
+
 }
 
 pub fn draw_class(buffer: &mut image::ImageBuffer<image::Bgra<u8>, Vec<u8>>, general: &General, fonts: &Vec<Font>, class: &Class,
