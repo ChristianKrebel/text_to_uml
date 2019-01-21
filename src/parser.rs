@@ -14,23 +14,7 @@ use std::process::exit;
 use defines::*;
 
 
-pub fn get_model_type(lines: &[String]) -> String {
-    return "ClassDiagram".to_string();
-}
-
-pub fn parse_object_model(lines: &[String]) -> Result<ObjectModel, ParseError> {
-
-}
-
-pub fn parse_package_model(lines: &[String]) -> Result<PackageModel, ParseError> {
-
-}
-
-pub fn parse_use_case_model(lines: &[String]) -> Result<UseCaseModel, ParseError> {
-
-}
-
-pub fn parse_class_model(lines: &[String]) -> Result<ClassModel, ParseError> {
+pub fn parse_model(lines: &[String]) -> Result<ModelContainer, ParseError> {
 
     let mut classes = Vec::new();
     let mut relations = Vec::new();

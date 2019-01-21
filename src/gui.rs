@@ -6,6 +6,7 @@ use parser;
 use drawer;
 use reader;
 use defines::*;
+use std::str::*;
 
 const CUSTOM_CSS: &str = "
     * { letter-spacing: 0.5pt; }
@@ -162,50 +163,48 @@ fn generate_image_callback(app_state: &mut AppState<AppData>, _window_info: Wind
     if !current_input_field.is_empty() {
         lines = match reader::read_from_text(&current_input_field) {
             Ok(val) => val,
-            Err(err) => {app_state.data.modify(|state| state.status =
-                format!("{}ERROR: Cannot read input text: {}\n", state.status, err));
+            Err(err) => {
+                app_state.data.modify(|state| state.status =
+                    format!("{}ERROR: Cannot read input text: {}\n", state.status, err));
                 return UpdateScreen::Redraw;
             }
         };
     } else{
         lines = match reader::read_from_file(&real_input_path) {
             Ok(val) => val,
-            Err(err) => {app_state.data.modify(|state| state.status =
-                format!("{}ERROR: Cannot read from file \"{}\": {}\n", state.status, real_input_path, err));
+            Err(err) => {
+                app_state.data.modify(|state| state.status =
+                    format!("{}ERROR: Cannot read from file \"{}\": {}\n", state.status, real_input_path, err));
                 return UpdateScreen::Redraw;
             }
         };
     }
 
+
     for line in lines.iter(){
         println!("lines: {}", line);
     }
 
-    let model_type: String = parser::get_model_type(&lines);
+    // Get ModelContainer with one model and its type
 
-    // Check for model type
-    if(){
-        let class_model = match parser::parse_class_model(&lines){
-            Ok(val) => val,
-            Err(err) =>
-        }
-    }
-    //-----------------------------------------------
-
-
-    let (classes, relations) = match parser::init
-        (if !current_input_field.is_empty() { &current_input_field } else { &real_input_path },
-         !current_input_field.is_empty()
-        )
-        {
-        Ok(cr) => cr,
-        Err(e) => {
-            println!("ERROR: Cannot load file \"{}\": {}.", real_input_path, e);
+    let model = match parser::parse_model(&lines) {
+        Ok(val) => val,
+        Err(err) => {
             app_state.data.modify(|state| state.status =
-                format!("{}ERROR: Cannot load file \"{}\": {}.\n", state.status, real_input_path, e));
+                format!("{}ERROR: Cannot not parse Input: {}\n", state.status, err));
             return UpdateScreen::Redraw;
         }
     };
+
+
+    // Get a buffer with the drawn model and the picture dimensions
+
+    let mut image_buf: image::ImageBuffer<image::Bgra<u8>> = None;
+    let mut dim: (u32, u32) = None;
+
+    (image_buf, dim) = drawer::get_image(model);
+
+
     //========================================
 
     //========== Test Implementation ==========
@@ -257,9 +256,7 @@ fn generate_image_callback(app_state: &mut AppState<AppData>, _window_info: Wind
     //========================================
 
 
-    let (mut image_buf, dim) = drawer::get_image(
-
-    );
+    // Save the image if possible
 
     if current_output_path.is_empty() {
         println!("ERROR: The output file path cannot be empty.");
@@ -274,6 +271,8 @@ fn generate_image_callback(app_state: &mut AppState<AppData>, _window_info: Wind
                 app_state.data.modify(|state| state.status =
                     format!("{}ERROR: Cannot save file to \"{}\".\n", state.status, real_output_path));
             });
+
+    // Update the shown picture in GUI
 
     let mut buffer = image_buf.into_raw();
     app_state.add_image_raw(IMAGE_ID, buffer, dim,
