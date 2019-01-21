@@ -18,10 +18,10 @@ use self::rand::Rng;
 use self::image::{DynamicImage, GenericImage, Pixel, Rgba, RgbaImage, ImageFormat};
 
 
-pub fn generate_class_model_layout(class_vec: &[Class], rel_vec: &[Relation]) -> (Vec<Layout>, Vec<Layout2>, (u32, u32)) {
+pub fn generate_class_model_layout(class_vec: &[Class], rel_vec: &[Relation]) -> (Vec<BoxLayout>, Vec<LineLayout>, u32, u32) {
 
     // ------ Layouting all classes ------
-    let mut class_layout_vec: Vec<Layout> = Vec::new();
+    let mut class_layout_vec: Vec<BoxLayout> = Vec::new();
     let mut class_count = class_vec.len();
 
     // calc distance between upper and lower classes
@@ -124,7 +124,7 @@ pub fn generate_class_model_layout(class_vec: &[Class], rel_vec: &[Relation]) ->
         let uneven: bool = if i % 2 != 0 {true} else {false};
 
 
-        let class_layout: Layout = Layout {
+        let class_layout: BoxLayout = BoxLayout {
             lt: lt,
             rt: rt,
             lb: lb,
@@ -160,7 +160,7 @@ pub fn generate_class_model_layout(class_vec: &[Class], rel_vec: &[Relation]) ->
     let mut rel_gap_first = ::REL_GAP_DISTANCE;
     let mut rel_gap_second = ::REL_GAP_DISTANCE;
 
-    let mut rel_layout_vec: Vec<Layout2> = Vec::new();
+    let mut rel_layout_vec: Vec<LineLayout> = Vec::new();
 
     let mut all_to_class_rels_vec: Vec<Vec<bool>> = Vec::new();
     for (i, c) in class_vec.iter().enumerate() {
@@ -270,7 +270,9 @@ pub fn generate_class_model_layout(class_vec: &[Class], rel_vec: &[Relation]) ->
                         y: y_end
                     };
 
-                    let rel_layout: Layout2 = Layout2 {
+                    let xy1y = xy1.y;
+
+                    let rel_layout: LineLayout = LineLayout {
                         start: xy1,
                         end: xy2,
                         base_first: base_line_first_half,
@@ -280,7 +282,7 @@ pub fn generate_class_model_layout(class_vec: &[Class], rel_vec: &[Relation]) ->
 
                     rel_layout_vec.push(rel_layout);
 
-                    if xy1.y == base_line_first_half {
+                    if xy1y == base_line_first_half {
                         rel_gap_first += ::REL_GAP_DISTANCE;
                     } else {
                         rel_gap_second += ::REL_GAP_DISTANCE;
@@ -290,10 +292,11 @@ pub fn generate_class_model_layout(class_vec: &[Class], rel_vec: &[Relation]) ->
         }
     }
 
-    (class_layout_vec, rel_layout_vec, (greatest_last_left_distance, top_line_second_half + greatest_height_second_half + 50))
+    (class_layout_vec, rel_layout_vec, greatest_last_left_distance, top_line_second_half + greatest_height_second_half + 50)
 }
 
-pub fn generate_object_model_layout(object_vec: &[Object], link_vec: &[Link]) -> (Vec<Layout>, Vec<Layout2>, (u32, u32)) {
+// TODO
+/*pub fn generate_object_model_layout(object_vec: &[Object], link_vec: &[Link]) -> (Vec<Layout>, Vec<Layout2>, (u32, u32)) {
 
 
     // ------ Layouting all classes ------
@@ -567,4 +570,4 @@ pub fn generate_object_model_layout(object_vec: &[Object], link_vec: &[Link]) ->
     }
 
     (class_layout_vec, rel_layout_vec, (greatest_last_left_distance, top_line_second_half + greatest_height_second_half + 50))
-}
+}*/

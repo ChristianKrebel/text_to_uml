@@ -5,7 +5,7 @@ use std::error::Error as StdError;
 
 //========== Structs and enums for layouting and drawing ==========
 #[derive(Debug)]
-pub struct Layout {
+pub struct BoxLayout {
     pub lt: XY,
     pub rt: XY,
     pub lb: XY,
@@ -16,7 +16,7 @@ pub struct Layout {
 }
 
 #[derive(Debug)]
-pub struct Layout2 {
+pub struct LineLayout {
     pub start: XY,
     pub end: XY,
     pub base_first: u32,
@@ -62,16 +62,16 @@ pub enum ParseError {
 impl fmt::Display for ParseError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
-            Error::NotFound => f.write_str("NotFound"),
-            Error::InternalServerError => f.write_str("InternalServerError"),
+            ParseError::NotFound => f.write_str("NotFound"),
+            ParseError::InternalServerError => f.write_str("InternalServerError"),
         }
     }
 }
 impl StdError for ParseError {
     fn description(&self) -> &str {
         match *self {
-            Error::NotFound => "Record not found",
-            Error::InternalServerError => "Internal server error",
+            ParseError::NotFound => "Record not found",
+            ParseError::InternalServerError => "Internal server error",
         }
     }
 }

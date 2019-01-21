@@ -21,23 +21,27 @@ use self::image::{DynamicImage, GenericImage, Pixel, Rgba, RgbaImage, ImageForma
 
 pub fn get_image(model: ModelContainer) -> (image::ImageBuffer<image::Bgra<u8>, Vec<u8>>, (u32, u32)) {
 
-    let (dim_x, dim_y) = (0, 0);
-    let layout_vec = Vec::new();
-    let layout2_vec = Vec::new();
+    let (mut dim_x, mut dim_y) = (1, 1);
+    let mut layout_vec = Vec::new();
+    let mut layout2_vec = Vec::new();
 
     // Get the layout vec and picture dimensions
     match model.model_type {
         ModelType::ClassModel => {
-            (layout_vec, layout2_vec, (dim_x, dim_y)) = generator::generate_class_model_layout(
+            let (a, b, c, d) = generator::generate_class_model_layout(
                 &model.class_model.classes,
                 &model.class_model.relations
-            )
+            );
+            layout_vec = a;
+            layout2_vec = b;
+            dim_x = c;
+            dim_y = d;
         }
         ModelType::ObjectModel => {
-            (layout_vec, layout2_vec, (dim_x, dim_y)) = generator::generate_object_model_layout(
+            /*(layout_vec, layout2_vec, (dim_x, dim_y)) = generator::generate_object_model_layout(
                 &model.object_model.objects,
                 &model.object_model.links
-            )
+            )*/ // TODO
         }
         ModelType::PackageModel => {
             // TODO
@@ -46,6 +50,8 @@ pub fn get_image(model: ModelContainer) -> (image::ImageBuffer<image::Bgra<u8>, 
             // TODO
         }
     }
+
+    println!("x: {}, y:{}", dim_x, dim_y);
 
     // Create a new ImgBuf with width: imgx and height: imgy
     let mut img_buf = image::DynamicImage::new_rgba8(dim_x, dim_y).to_bgra();
@@ -120,9 +126,9 @@ pub fn get_image(model: ModelContainer) -> (image::ImageBuffer<image::Bgra<u8>, 
             }
         }
         ModelType::ObjectModel => {
-            for (i, o) in model.object_model.objects.iter().enumerate() {
+            /*for (i, o) in model.object_model.objects.iter().enumerate() {
                 draw_object(&mut img_buf, &general, &font_vec, &o, &layout_vec[i]);
-            }
+            }*/ // TODO
             // TODO Links
         }
         ModelType::PackageModel => {
@@ -139,7 +145,7 @@ pub fn get_image(model: ModelContainer) -> (image::ImageBuffer<image::Bgra<u8>, 
 }
 
 pub fn draw_class(buffer: &mut image::ImageBuffer<image::Bgra<u8>, Vec<u8>>, general: &General, fonts: &Vec<Font>, class: &Class,
-                  class_layout: &ClassLayout) {
+                  class_layout: &BoxLayout) {
 
     let x = general.imgxy.x;
     let y = general.imgxy.y;
@@ -701,8 +707,8 @@ pub fn draw_rel(buffer: &mut image::ImageBuffer<image::Bgra<u8>, Vec<u8>>, gener
     }
 }
 
-
-pub fn draw_object(buffer: &mut image::ImageBuffer<image::Bgra<u8>, Vec<u8>>, general: &General, fonts: &Vec<Font>, object: &Object,
+// TODO
+/*pub fn draw_object(buffer: &mut image::ImageBuffer<image::Bgra<u8>, Vec<u8>>, general: &General, fonts: &Vec<Font>, object: &Object,
                   class_layout: &Layout) {
 
     let x = general.imgxy.x;
@@ -1279,3 +1285,4 @@ pub fn draw_link(buffer: &mut image::ImageBuffer<image::Bgra<u8>, Vec<u8>>, gene
     ret.push(rel_gap_second);
     ret
 }
+*/
