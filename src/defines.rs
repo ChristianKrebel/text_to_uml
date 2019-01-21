@@ -5,7 +5,7 @@ use std::error::Error as StdError;
 
 //========== Structs and enums for layouting and drawing ==========
 #[derive(Debug)]
-pub struct ClassLayout {
+pub struct Layout {
     pub lt: XY,
     pub rt: XY,
     pub lb: XY,
@@ -13,6 +13,15 @@ pub struct ClassLayout {
     pub height: u32,
     pub width: u32,
     pub uneven: bool
+}
+
+#[derive(Debug)]
+pub struct Layout2 {
+    pub start: XY,
+    pub end: XY,
+    pub base_first: u32,
+    pub gap_first: f32,
+    pub gap_second: f32
 }
 
 #[derive(Debug)]
