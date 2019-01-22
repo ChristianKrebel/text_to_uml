@@ -14,11 +14,11 @@ const CUSTOM_CSS: &str = "
     #input_label { padding-left: 4px; padding-right: 4px; }
     #output_field { padding-left: 4px; padding-right: 4px; }
     #output_label { padding-left: 4px; padding-right: 4px; }
-    #input_model_field { height: 400px; min-width: 200px; background-color: yellow; }
+    #input_model_field { min-height: 600px; min-width: 200px; }
     #output_image {  }
-    #generate_button {  }
-    #status_label { background-color: red; line-height: 1.3pt; }
-    #placeholder_image { background-color: blue; font-size: 20px; color: black; }
+    #generate_button { max-width: 300px; }
+    #status_label { line-height: 1.3pt; height: 70px; text-align: left; margin-left: 10px; margin-right: 10px; }
+    #placeholder_image { line-height: 1.3pt; margin-left: 10px; margin-right: 10px; font-size: 20px; color: black; }
     #filename_wrapper { flex-direction: row; height: 28px; padding: 4px; margin: 2px; }
     #bottom_wrapper { min-height: 200px; flex-direction: row; padding: 4px; margin: 2px; }
     #middle_wrapper { flex-direction: row; min-height: 50px; max-height: 70px; padding: 4px; margin: 2px; }
@@ -38,22 +38,7 @@ impl Default for AppData {
         Self {
             input_file_name: TextInputState::new("input.txt"),
             output_file_name: TextInputState::new("output.png"),
-            input_model_structure: TextInputState::new("AbstractClass:Person
---
-protected static String name
-protected String vorname
---
-public String getFullName()
-
-Class:Angestellter
---
-static int ID
-private String position
---
-public Auftrag auftragErstellen()
-public void auftragBearbeiten()
-
-"),
+            input_model_structure: TextInputState::new(""),
             current_image: None,
             status: String::new()
         }
@@ -84,11 +69,11 @@ impl Layout for AppData {
         let image = match &self.current_image {
             Some(image_id) => Dom::image(info.resources.get_image(image_id).unwrap())
                 .with_id("output_image"),
-            None => Dom::label("Please enter the file path and hit \"Generate Image\".")
+            None => Dom::label("Please enter the file path(s) or the text directly into the text field and hit \"Generate Image\".")
                 .with_id("placeholder_image"),
         };
 
-        let button = Button::with_label("Generate image").dom()
+        let button = Button::with_label("Generate Image").dom()
             .with_id("generate_button")
             .with_callback(On::LeftMouseDown, Callback(generate_image_callback));
 
@@ -124,12 +109,19 @@ fn generate_image_callback(app_state: &mut AppState<AppData>, _window_info: Wind
     let real_input_path = format!("{}/{}", current_working_directory, current_input_path);
     let real_output_path = format!("{}/{}", current_working_directory, current_output_path);
 
-    // Delete the old image if necessary
-    app_state.delete_image(IMAGE_ID);
-
 
     // Clear status
     app_state.data.modify(|state| state.status = String::from(""));
+
+    // Error and return if there's no input
+    if current_input_field.is_empty() && current_input_path.is_empty() {
+        println!("ERROR: Cannot find input");
+        app_state.data.modify(|state| state.status =
+            format!("{}ERROR: Cannot find input\n", state.status));
+        return UpdateScreen::Redraw;
+    }
+
+
 
     // Check for file extension
     let mut dot_pos = 0;
@@ -225,7 +217,8 @@ fn generate_image_callback(app_state: &mut AppState<AppData>, _window_info: Wind
             });
 
     // Update the shown picture in GUI
-
+    // Delete the old image if necessary
+    app_state.delete_image(IMAGE_ID);
     let mut buffer = image_buf.into_raw();
     app_state.add_image_raw(IMAGE_ID, buffer, dim,
                             RawImageFormat::BGRA8).unwrap();
@@ -234,6 +227,7 @@ fn generate_image_callback(app_state: &mut AppState<AppData>, _window_info: Wind
     app_state.data.modify(|state| state.status =
         format!("{}SUCCESS: Generated model.\n", state.status));
 
+    println!("Redraw");
     UpdateScreen::Redraw
 }
 

@@ -1,14 +1,36 @@
-AbstractClass:Person
---
-protected static String name
-protected String vorname
---
-public String getFullName()
+Object:lg
+lieblingsgrieche:Restaurant
+kategorie:Sterne 3
+name "Platon"
 
-Class:Angestellter
---
-static int ID
-private String position
---
-public Auftrag auftragErstellen()
-public void auftragBearbeiten()
+Object:maren
+maren:Gast
+status "König"
+geldbetrag:EUR 300
+
+Object:klaudia
+klaudia:Gast
+status "König"
+geldbetrag:EUR 20
+hunger true
+
+Object:k1
+:Kellner
+persAusweisNr 12345
+gehalt:EUR 1500
+
+Link
+k1,lg
++Arbeitnehmer,+Arbeitgeber
+
+Link:bedient
+k1,maren
+
+Link:bedient
+k1,klaudia
+
+Link:besucht
+klaudia,lg
+
+Link:besucht
+maren,lg
