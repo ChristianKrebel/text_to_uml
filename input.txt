@@ -1,3 +1,5 @@
+Model:Object
+
 Object:lg
 lieblingsgrieche:Restaurant
 kategorie:Sterne 3

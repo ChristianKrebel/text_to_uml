@@ -14,7 +14,7 @@ const CUSTOM_CSS: &str = "
     #input_label { padding-left: 4px; padding-right: 4px; }
     #output_field { padding-left: 4px; padding-right: 4px; }
     #output_label { padding-left: 4px; padding-right: 4px; }
-    #input_model_field { min-height: 600px; min-width: 200px; }
+    #input_model_field { line-height: 1.3pt; min-height: 600px; min-width: 200px; }
     #output_image {  }
     #generate_button { max-width: 300px; }
     #status_label { line-height: 1.3pt; height: 70px; text-align: left; margin-left: 10px; margin-right: 10px; }
@@ -38,7 +38,45 @@ impl Default for AppData {
         Self {
             input_file_name: TextInputState::new("input.txt"),
             output_file_name: TextInputState::new("output.png"),
-            input_model_structure: TextInputState::new(""),
+            input_model_structure: TextInputState::new("Model:Object
+
+Object:lg
+lieblingsgrieche:Restaurant
+kategorie:Sterne 3
+name \"Platon\"
+
+Object:maren
+maren:Gast
+status \"König\"
+geldbetrag:EUR 300
+
+Object:klaudia
+klaudia:Gast
+status \"König\"
+geldbetrag:EUR 20
+hunger true
+
+Object:k1
+:Kellner
+persAusweisNr 12345
+gehalt:EUR 1500
+
+Link
+k1,lg
++Arbeitnehmer,+Arbeitgeber
+
+Link:bedient
+k1,maren
+
+Link:bedient
+k1,klaudia
+
+Link:besucht
+klaudia,lg
+
+Link:besucht
+maren,lg
+"),
             current_image: None,
             status: String::new()
         }
