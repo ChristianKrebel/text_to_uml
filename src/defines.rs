@@ -173,8 +173,8 @@ pub struct ClassModel{
 
 #[derive(Debug)]
 pub struct Object{
-    pub object_name: String,
-    pub belonging_class: String,
+    pub object_title: String,
+    pub object_intern_name: String,
     pub content_lines: Vec<String>
 }
 
@@ -182,9 +182,9 @@ pub struct Object{
 pub struct Link{
     pub link_name: String,
     pub from_object: String,
-    pub from_class_role: String,
+    pub from_object_role: String,
     pub to_object: String,
-    pub to_class_role: String
+    pub to_object_role: String
 }
 
 #[derive(Debug)]

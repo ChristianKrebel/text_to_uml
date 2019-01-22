@@ -18,7 +18,7 @@ const CUSTOM_CSS: &str = "
     #output_image {  }
     #generate_button { max-width: 300px; }
     #status_label { line-height: 1.3pt; height: 70px; text-align: left; margin-left: 10px; margin-right: 10px; }
-    #placeholder_image { background-color: blue; font-size: 20px; color: black; }
+    #placeholder_image { font-size: 20px; color: black; }
     #filename_wrapper { flex-direction: row; height: 28px; padding: 4px; margin: 2px; }
     #bottom_wrapper { min-height: 200px; flex-direction: row; padding: 4px; margin: 2px; }
     #middle_wrapper { flex-direction: row; min-height: 50px; max-height: 70px; padding: 4px; margin: 2px; }
