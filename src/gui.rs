@@ -18,7 +18,7 @@ const CUSTOM_CSS: &str = "
     #output_image {  }
     #generate_button { max-width: 300px; }
     #status_label { line-height: 1.3pt; height: 70px; text-align: left; margin-left: 10px; margin-right: 10px; }
-    #placeholder_image { font-size: 20px; color: black; }
+    #placeholder_image { line-height: 1.3pt; margin-left: 10px; margin-right: 10px; font-size: 20px; color: black; }
     #filename_wrapper { flex-direction: row; height: 28px; padding: 4px; margin: 2px; }
     #bottom_wrapper { min-height: 200px; flex-direction: row; padding: 4px; margin: 2px; }
     #middle_wrapper { flex-direction: row; min-height: 50px; max-height: 70px; padding: 4px; margin: 2px; }
@@ -38,22 +38,7 @@ impl Default for AppData {
         Self {
             input_file_name: TextInputState::new("input.txt"),
             output_file_name: TextInputState::new("output.png"),
-            input_model_structure: TextInputState::new("AbstractClass:Person
---
-protected static String name
-protected String vorname
---
-public String getFullName()
-
-Class:Angestellter
---
-static int ID
-private String position
---
-public Auftrag auftragErstellen()
-public void auftragBearbeiten()
-
-"),
+            input_model_structure: TextInputState::new(""),
             current_image: None,
             status: String::new()
         }
