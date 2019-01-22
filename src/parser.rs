@@ -144,17 +144,17 @@ pub fn parse_model(lines: &[String]) -> Result<ModelContainer, ParseError> {
         {
             link_name: String::from("besucht"),
             from_object: String::from("maren"),
-            from_object_role: String::from("+König"),
+            from_object_role: String::from(""),
             to_object: String::from("lg"),
-            to_object_role: String::from("+Diener")
+            to_object_role: String::from("")
         };
     let mut link2: Link = Link
         {
             link_name: String::from("besucht"),
             from_object: String::from("klaudia"),
-            from_object_role: String::from("+König"),
+            from_object_role: String::from(""),
             to_object: String::from("lg"),
-            to_object_role: String::from("+Diener")
+            to_object_role: String::from("")
         };
     let mut link3: Link = Link
         {

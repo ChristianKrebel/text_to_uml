@@ -295,7 +295,6 @@ pub fn generate_class_model_layout(class_vec: &[Class], rel_vec: &[Relation]) ->
     (class_layout_vec, rel_layout_vec, greatest_last_left_distance, top_line_second_half + greatest_height_second_half + 50)
 }
 
-// TODO
 pub fn generate_object_model_layout(object_vec: &[Object], link_vec: &[Link]) -> (Vec<BoxLayout>, Vec<LineLayout>, u32, u32) {
 
     // ------ Layouting all objects ------
@@ -303,7 +302,7 @@ pub fn generate_object_model_layout(object_vec: &[Object], link_vec: &[Link]) ->
     let mut object_count = object_vec.len();
 
     // calc distance between upper and lower objects
-    let RELATION_GAP: u32 = ((::RELATION_STICK * 2) as f32 + (link_vec.len() as f32 + 1.0) * ::REL_GAP_DISTANCE) as u32;
+    let RELATION_GAP: u32 = ((::RELATION_STICK * 2) as f32 + (link_vec.len() as f32 + 1.0) * ::LINK_GAP_DISTANCE) as u32;
 
     // calc heights for upper half of objects (uneven)
     let mut greatest_height_first_half: u32 = 0;
@@ -421,8 +420,8 @@ pub fn generate_object_model_layout(object_vec: &[Object], link_vec: &[Link]) ->
     // ------ Layouting all Links ------
 
 
-    let mut link_gap_first = ::REL_GAP_DISTANCE;
-    let mut link_gap_second = ::REL_GAP_DISTANCE;
+    let mut link_gap_first = ::LINK_GAP_DISTANCE;
+    let mut link_gap_second = ::LINK_GAP_DISTANCE;
 
     let mut link_layout_vec: Vec<LineLayout> = Vec::new();
 
@@ -547,9 +546,9 @@ pub fn generate_object_model_layout(object_vec: &[Object], link_vec: &[Link]) ->
                     link_layout_vec.push(link_layout);
 
                     if xy1y == base_line_first_half {
-                        link_gap_first += ::REL_GAP_DISTANCE;
+                        link_gap_first += ::LINK_GAP_DISTANCE;
                     } else {
-                        link_gap_second += ::REL_GAP_DISTANCE;
+                        link_gap_second += ::LINK_GAP_DISTANCE;
                     }
                 }
             }

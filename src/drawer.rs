@@ -793,6 +793,47 @@ pub fn draw_link(buffer: &mut image::ImageBuffer<image::Bgra<u8>, Vec<u8>>, gene
                 if is_in_first { link_gap_first } else { -link_gap_second } + ::CARD_DIST as f32) as u32,
             general.scales.one, &fonts[0], &link.from_object_role);
     }
+    // link name
+    if !link.link_name.is_empty() {
+
+        // Draw text
+        let link_x = ((if start.x < end.x
+            {
+                start.x + (end.x - start.x)/2
+            }
+            else {
+                end.x + (start.x - end.x)/2
+            }) - link.link_name.len() as u32 /2 as u32 * ::LETTER_WIDTH_ACCURATE as u32) as u32;
+
+        let link_y = (start_link_y +
+            if is_in_first { link_gap_first }
+                else { -link_gap_second } + ::ROLE_NAME_DIST as f32 - ::LINE_HEIGHT as f32) as u32;
+
+        draw_text_mut(
+            buffer, general.colors.black,
+            link_x,
+            link_y,
+            general.scales.one,
+            &fonts[0],
+            &link.link_name);
+
+        // Draw arrow
+        let mut p1: Point<i32>;
+        let mut p2: Point<i32>;
+        let mut p3: Point<i32>;
+
+        if start.x < end.x {
+            p1 = Point::new((link_x - ::CARD_DIST)as i32, (link_y + 14/2) as i32);
+            p2 = Point::new((link_x - ::CARD_DIST - ::ROLE_NAME_ARROW_SIZE)as i32, (link_y + 14) as i32);
+            p3 = Point::new((link_x - ::CARD_DIST - ::ROLE_NAME_ARROW_SIZE)as i32, (link_y) as i32);
+        } else {
+            p1 = Point::new((link_x - ::CARD_DIST - ::ROLE_NAME_ARROW_SIZE)as i32, (link_y + 14/2) as i32);
+            p2 = Point::new((link_x - ::CARD_DIST)as i32, (link_y + 14) as i32);
+            p3 = Point::new((link_x - ::CARD_DIST)as i32, (link_y) as i32);
+        }
+
+        draw_convex_polygon_mut(buffer, &[p1, p2, p3], general.colors.black);
+    }
     if !link.to_object_role.is_empty() {
         draw_text_mut(
             buffer, general.colors.black, end.x as u32 + ::CARD_DIST as u32,
