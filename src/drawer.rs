@@ -88,7 +88,7 @@ pub fn get_image(model: ModelContainer) -> (image::ImageBuffer<image::Bgra<u8>, 
 
     // The font size to use
     let scales: Scales = Scales {
-        one: Scale::uniform(18.0),
+        one: Scale::uniform(16.0),
         two: Scale::uniform(26.0),
     };
 
@@ -719,8 +719,8 @@ pub fn draw_rel(buffer: &mut image::ImageBuffer<image::Bgra<u8>, Vec<u8>>, gener
 }
 
 
-pub fn draw_object(buffer: &mut image::ImageBuffer<image::Bgra<u8>, Vec<u8>>, general: &General, fonts: &Vec<Font>, object: &Object,
-                  object_layout: &BoxLayout) {
+pub fn draw_object(buffer: &mut image::ImageBuffer<image::Bgra<u8>, Vec<u8>>, general: &General,
+                   fonts: &Vec<Font>, object: &Object, object_layout: &BoxLayout) {
 
     let x = general.imgxy.x;
     let y = general.imgxy.y;
@@ -764,8 +764,9 @@ pub fn draw_object(buffer: &mut image::ImageBuffer<image::Bgra<u8>, Vec<u8>>, ge
 }
 
 
-pub fn draw_link(buffer: &mut image::ImageBuffer<image::Bgra<u8>, Vec<u8>>, general: &General, fonts: &Vec<Font>, link: &Link,
-                start: &XY, end: &XY, base_first: u32, link_gap_first: f32, link_gap_second: f32) {
+pub fn draw_link(buffer: &mut image::ImageBuffer<image::Bgra<u8>, Vec<u8>>, general: &General,
+                 fonts: &Vec<Font>, link: &Link, start: &XY, end: &XY, base_first: u32,
+                 link_gap_first: f32, link_gap_second: f32) {
 
     println!("from: {}, from role: {}", link.from_object, link.from_object_role);
     println!("to: {}, to role: {}", link.to_object, link.to_object_role);

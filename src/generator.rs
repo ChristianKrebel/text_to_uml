@@ -399,9 +399,9 @@ pub fn generate_object_model_layout(object_vec: &[Object], link_vec: &[Link]) ->
         };
         object_layout_vec.push(object_layout);
         if i % 2 != 0 {
-            last_left_distance_uneven += &greatest_width + 100;
+            last_left_distance_uneven += &greatest_width + 200;
         } else {
-            last_left_distance_even += &greatest_width + 100;
+            last_left_distance_even += &greatest_width + 200;
         }
     }
 
@@ -411,7 +411,7 @@ pub fn generate_object_model_layout(object_vec: &[Object], link_vec: &[Link]) ->
 
     // Calc picture bounds
     let mut greatest_last_left_distance: u32 = if last_left_distance_uneven > last_left_distance_even
-        {last_left_distance_uneven - 50} else {last_left_distance_even - 50};
+        {last_left_distance_uneven - 150} else {last_left_distance_even - 150};
     let xy: XY = XY {
         x: greatest_last_left_distance,
         y: top_line_second_half + greatest_height_second_half + 50,
@@ -439,7 +439,7 @@ pub fn generate_object_model_layout(object_vec: &[Object], link_vec: &[Link]) ->
         // Durch alle Links
         for (index, link) in link_vec.iter().enumerate() {
             // Wenn Link eingeht, dann speichere Index des Links
-            if link.to_object == o.object_title {
+            if link.to_object == o.object_intern_name {
                 to_object_links_vec.push(false);
             }
         }
@@ -458,11 +458,11 @@ pub fn generate_object_model_layout(object_vec: &[Object], link_vec: &[Link]) ->
         // Durch alle Links
         for (index, link) in link_vec.iter().enumerate() {
             // Wenn Link ausgeht, dann speichere Index des Links
-            if link.from_object == o.object_title {
+            if link.from_object == o.object_intern_name {
                 links_indexes.push(index);
             }
             // Wenn Links eingeht, dann speichere Index der Relation
-            if link.to_object == o.object_title {
+            if link.to_object == o.object_intern_name {
                 links_indexes2.push(index);
             }
         }
@@ -502,7 +502,7 @@ pub fn generate_object_model_layout(object_vec: &[Object], link_vec: &[Link]) ->
 
                     let mut to_object_i: usize = 0;
                     for (ci, o) in object_vec.iter().enumerate() {
-                        if o.object_title == link.to_object {
+                        if o.object_intern_name == link.to_object {
                             to_object_i = ci;
                         }
                     }

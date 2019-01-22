@@ -104,6 +104,13 @@ pub fn parse_model(lines: &[String]) -> Result<ModelContainer, ParseError> {
     content_lines2.push(String::from("status = 'König'"));
     content_lines2.push(String::from("geldbetrag: EUR = 300"));
     content_lines2.push(String::from("hunger = true"));
+    let mut content_lines3: Vec<String> = Vec::new();
+    content_lines3.push(String::from("status = 'König'"));
+    content_lines3.push(String::from("geldbetrag: EUR = 20"));
+    content_lines3.push(String::from("hunger = true"));
+    let mut content_lines4: Vec<String> = Vec::new();
+    content_lines4.push(String::from("persAusweisNr = 12345"));
+    content_lines4.push(String::from("gehalt: EUR = 1500"));
     let mut object: Object = Object
         {
             object_title: String::from("lieblingsgrieche :Restaurant"),
@@ -116,18 +123,68 @@ pub fn parse_model(lines: &[String]) -> Result<ModelContainer, ParseError> {
             object_intern_name: String::from("maren"),
             content_lines: content_lines2,
         };
+    let mut object3: Object = Object
+        {
+            object_title: String::from("klaudia :Gast"),
+            object_intern_name: String::from("klaudia"),
+            content_lines: content_lines3,
+        };
+    let mut object4: Object = Object
+        {
+            object_title: String::from(":Kellner"),
+            object_intern_name: String::from("k1"),
+            content_lines: content_lines4,
+        };
     objects.push(object);
     objects.push(object2);
+    objects.push(object3);
+    objects.push(object4);
 
     let mut link: Link = Link
         {
             link_name: String::from("besucht"),
-            from_object: String::from("maren :Gast"),
-            from_object_role: String::from("n"),
-            to_object: String::from("lieblingsgrieche :Restaurant"),
-            to_object_role: String::from("*")
+            from_object: String::from("maren"),
+            from_object_role: String::from("+König"),
+            to_object: String::from("lg"),
+            to_object_role: String::from("+Diener")
+        };
+    let mut link2: Link = Link
+        {
+            link_name: String::from("besucht"),
+            from_object: String::from("klaudia"),
+            from_object_role: String::from("+König"),
+            to_object: String::from("lg"),
+            to_object_role: String::from("+Diener")
+        };
+    let mut link3: Link = Link
+        {
+            link_name: String::from(""),
+            from_object: String::from("k1"),
+            from_object_role: String::from("+Arbeitnehmer"),
+            to_object: String::from("lg"),
+            to_object_role: String::from("+Arbeitgeber")
+        };
+    let mut link4: Link = Link
+        {
+            link_name: String::from("bedient"),
+            from_object: String::from("k1"),
+            from_object_role: String::from(""),
+            to_object: String::from("maren"),
+            to_object_role: String::from("")
+        };
+    let mut link5: Link = Link
+        {
+            link_name: String::from("bedient"),
+            from_object: String::from("k1"),
+            from_object_role: String::from(""),
+            to_object: String::from("klaudia"),
+            to_object_role: String::from("")
         };
     links.push(link);
+    links.push(link2);
+    links.push(link3);
+    links.push(link4);
+    links.push(link5);
 
     let classes: Vec<Class> = Vec::new();
     let relations: Vec<Relation> = Vec::new();
