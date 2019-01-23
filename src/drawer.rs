@@ -19,39 +19,47 @@ use self::rand::Rng;
 use self::image::{DynamicImage, GenericImage, Pixel, Rgba, RgbaImage, ImageFormat};
 
 
-pub fn get_image(model: ModelContainer) -> (image::ImageBuffer<image::Bgra<u8>, Vec<u8>>, (u32, u32)) {
+pub fn get_image(mut model: ModelContainer) -> (image::ImageBuffer<image::Bgra<u8>, Vec<u8>>, (u32, u32)) {
 
     let (mut dim_x, mut dim_y) = (1, 1);
     let mut layout_vec = Vec::new();
     let mut layout2_vec = Vec::new();
 
+
     // Get the layout vec and picture dimensions
     match model.model_type {
         ModelType::ClassModel => {
+            let cm = model.class_model.unwrap();
             let (a, b, c, d) = generator::generate_class_model_layout(
-                &model.class_model.classes,
-                &model.class_model.relations
+                &cm.classes,
+                &cm.relations
             );
             layout_vec = a;
             layout2_vec = b;
             dim_x = c;
             dim_y = d;
+            model = ModelContainer { model_type: ModelType::ClassModel, class_model: Some(cm), object_model:None, package_model:None, use_case_model:None };
         }
         ModelType::ObjectModel => {
+            let om = model.object_model.unwrap();
             let (a, b, c, d) = generator::generate_object_model_layout(
-                &model.object_model.objects,
-                &model.object_model.links
+                &om.objects,
+                &om.links
             );
             layout_vec = a;
             layout2_vec = b;
             dim_x = c;
             dim_y = d;
+            model = ModelContainer { model_type: ModelType::ObjectModel, class_model:None, object_model: Some(om), package_model:None, use_case_model:None };
         }
         ModelType::PackageModel => {
             // TODO
         }
         ModelType::UseCaseModel => {
             // TODO
+        }
+        ModelType::None => {
+            // Done
         }
     }
 
@@ -113,10 +121,11 @@ pub fn get_image(model: ModelContainer) -> (image::ImageBuffer<image::Bgra<u8>, 
     // ------ DRAW ------
     match model.model_type {
         ModelType::ClassModel => {
-            for (i, c) in model.class_model.classes.iter().enumerate() {
+            let cm = model.class_model.unwrap();
+            for (i, c) in cm.classes.iter().enumerate() {
                 draw_class(&mut img_buf, &general, &font_vec, &c, &layout_vec[i]);
             }
-            for (i, r) in model.class_model.relations.iter().enumerate() {
+            for (i, r) in cm.relations.iter().enumerate() {
                 draw_rel(&mut img_buf, &general,
                          &font_vec,
                          &r,
@@ -128,13 +137,14 @@ pub fn get_image(model: ModelContainer) -> (image::ImageBuffer<image::Bgra<u8>, 
             }
         }
         ModelType::ObjectModel => {
-            for (i, o) in model.object_model.objects.iter().enumerate() {
+            let om = model.object_model.unwrap();
+            for (i, o) in om.objects.iter().enumerate() {
                 draw_object(&mut img_buf, &general, &font_vec, &o, &layout_vec[i]);
             }
-            for (i, r) in model.object_model.links.iter().enumerate() {
+            for (i, l) in om.links.iter().enumerate() {
                 draw_link(&mut img_buf, &general,
                          &font_vec,
-                         &r,
+                         &l,
                          &layout2_vec[i].start,
                          &layout2_vec[i].end,
                          layout2_vec[i].base_first,
@@ -147,6 +157,9 @@ pub fn get_image(model: ModelContainer) -> (image::ImageBuffer<image::Bgra<u8>, 
         }
         ModelType::UseCaseModel => {
             // TODO
+        }
+        ModelType::None => {
+            // Done
         }
     }
 
@@ -207,10 +220,10 @@ pub fn draw_class(buffer: &mut image::ImageBuffer<image::Bgra<u8>, Vec<u8>>, gen
 
             // Draw all other lines of text or just lines
             let mut deco_font: u32 = 0;
-            for (i, line) in class.content_lines.iter().enumerate() {
+            for (i, line) in class.lines.iter().enumerate() {
                 let mut is_horizontal_line: bool = false;
                 let mut is_underlined: bool = false;
-                match class.content_decor[i] {
+                match class.lines[i].decor {
                     TextDecoration::None => {
                     }
                     TextDecoration::HorizontalLine => {
@@ -229,7 +242,7 @@ pub fn draw_class(buffer: &mut image::ImageBuffer<image::Bgra<u8>, Vec<u8>>, gen
                         is_underlined = true;
                     }
                 }
-                if is_horizontal_line || line.is_empty() || line == "-" {
+                if is_horizontal_line || line.content.is_empty() || line.content == "-" {
                     draw_hollow_rect_mut(
                         buffer, imageproc::rect::Rect::at(
                             class_layout.lt.x as i32, class_layout.lt.y as i32).of_size(
@@ -239,13 +252,13 @@ pub fn draw_class(buffer: &mut image::ImageBuffer<image::Bgra<u8>, Vec<u8>>, gen
                 } else {
                     draw_text_mut(
                         buffer, colors.black, class_layout.lt.x + ::PADDING_LEFT,
-                        height_to_write_at, scales.two, &fonts[deco_font as usize], &line);
+                        height_to_write_at, scales.two, &fonts[deco_font as usize], &line.content);
                     if is_underlined {
                         draw_line_segment_mut(buffer,
                                               ((class_layout.lt.x + ::PADDING_LEFT) as f32,
                                                height_to_write_at as f32 + ::LINE_HEIGHT as f32 - 6.0),
                                               ((class_layout.lt.x + ::PADDING_LEFT) as f32 +
-                                                   (::LETTER_WIDTH as f32 * (line.len() as f32 - 1.0)),
+                                                   (::LETTER_WIDTH as f32 * (line.content.len() as f32 - 1.0)),
                                                height_to_write_at as f32 + ::LINE_HEIGHT as f32 - 6.0),
                                               general.colors.black);
                     }
@@ -295,10 +308,10 @@ pub fn draw_class(buffer: &mut image::ImageBuffer<image::Bgra<u8>, Vec<u8>>, gen
 
             // Draw all other lines of text or just lines
             let mut deco_font: u32 = 0;
-            for (i, line) in class.content_lines.iter().enumerate() {
+            for (i, line) in class.lines.iter().enumerate() {
                 let mut is_horizontal_line: bool = false;
                 let mut is_underlined: bool = false;
-                match class.content_decor[i] {
+                match class.lines[i].decor {
                     TextDecoration::None => {
                     }
                     TextDecoration::HorizontalLine => {
@@ -317,7 +330,7 @@ pub fn draw_class(buffer: &mut image::ImageBuffer<image::Bgra<u8>, Vec<u8>>, gen
                         is_underlined = true;
                     }
                 }
-                if is_horizontal_line || line.is_empty() || line == "-" {
+                if is_horizontal_line || line.content.is_empty() || line.content == "-" {
                     draw_hollow_rect_mut(
                         buffer, imageproc::rect::Rect::at(
                             class_layout.lt.x as i32, class_layout.lt.y as i32).of_size(
@@ -327,13 +340,13 @@ pub fn draw_class(buffer: &mut image::ImageBuffer<image::Bgra<u8>, Vec<u8>>, gen
                 } else {
                     draw_text_mut(
                         buffer, colors.black, class_layout.lt.x + ::PADDING_LEFT,
-                        height_to_write_at, scales.two, &fonts[deco_font as usize], &line);
+                        height_to_write_at, scales.two, &fonts[deco_font as usize], &line.content);
                     if is_underlined {
                         draw_line_segment_mut(buffer,
                                               ((class_layout.lt.x + ::PADDING_LEFT) as f32,
                                                height_to_write_at as f32 + ::LINE_HEIGHT as f32 - 6.0),
                                               ((class_layout.lt.x + ::PADDING_LEFT) as f32 +
-                                                   (::LETTER_WIDTH as f32 * (line.len() as f32 - 1.0)),
+                                                   (::LETTER_WIDTH as f32 * (line.content.len() as f32 - 1.0)),
                                                height_to_write_at as f32 + ::LINE_HEIGHT as f32 - 6.0),
                                               general.colors.black);
                     }
@@ -389,10 +402,10 @@ pub fn draw_class(buffer: &mut image::ImageBuffer<image::Bgra<u8>, Vec<u8>>, gen
 
             // Draw all other lines of text or just lines
             let mut deco_font: u32 = 0;
-            for (i, line) in class.content_lines.iter().enumerate() {
+            for (i, line) in class.lines.iter().enumerate() {
                 let mut is_horizontal_line: bool = false;
                 let mut is_underlined: bool = false;
-                match class.content_decor[i] {
+                match class.lines[i].decor {
                     TextDecoration::None => {
                     }
                     TextDecoration::HorizontalLine => {
@@ -411,7 +424,7 @@ pub fn draw_class(buffer: &mut image::ImageBuffer<image::Bgra<u8>, Vec<u8>>, gen
                         is_underlined = true;
                     }
                 }
-                if is_horizontal_line || line.is_empty() || line == "-" {
+                if is_horizontal_line || line.content.is_empty() || line.content == "-" {
                     draw_hollow_rect_mut(
                         buffer, imageproc::rect::Rect::at(
                             class_layout.lt.x as i32, class_layout.lt.y as i32).of_size(
@@ -421,13 +434,13 @@ pub fn draw_class(buffer: &mut image::ImageBuffer<image::Bgra<u8>, Vec<u8>>, gen
                 } else {
                     draw_text_mut(
                         buffer, colors.black, class_layout.lt.x + ::ACTIVE_PADDING,
-                        height_to_write_at, scales.two, &fonts[deco_font as usize], &line);
+                        height_to_write_at, scales.two, &fonts[deco_font as usize], &line.content);
                     if is_underlined {
                         draw_line_segment_mut(buffer,
                                               ((class_layout.lt.x + ::ACTIVE_PADDING) as f32,
                                                height_to_write_at as f32 + ::LINE_HEIGHT as f32 - 6.0),
                                               ((class_layout.lt.x + ::ACTIVE_PADDING) as f32 +
-                                                   (::LETTER_WIDTH as f32 * (line.len() as f32 - 1.0)),
+                                                   (::LETTER_WIDTH as f32 * (line.content.len() as f32 - 1.0)),
                                                height_to_write_at as f32 + ::LINE_HEIGHT as f32 - 6.0),
                                               general.colors.black);
                     }

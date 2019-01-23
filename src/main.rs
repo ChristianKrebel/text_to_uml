@@ -7,11 +7,10 @@ extern crate rand;
 extern crate nom;
 
 pub(crate) mod parser;
-//pub(crate) mod generator;
-//pub(crate) mod drawer;
+pub(crate) mod generator;
+pub(crate) mod drawer;
 mod reader;
-use reader::*;
-//mod gui;
+mod gui;
 mod defines;
 use std::str::*;
 use std::env::*;
@@ -86,6 +85,7 @@ fn main() {
     // let (classes, relations) = parser::init(&input_filename).unwrap();
     // let image_buf = generator::generate_pic(&classes, &relations);
     // image_buf.save(&Path::new(&output_filename)).unwrap();
+
 }
 
 type InputFilePath = String;

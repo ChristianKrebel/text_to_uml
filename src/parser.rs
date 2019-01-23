@@ -291,7 +291,7 @@ pub fn parse_model(lines: &[String]) -> Result<ModelContainer, ParseError> {
         count = count + count;
     }
 
-    let mc = match m_type {
+    let mut mc = match m_type {
         ModelType::ClassModel => {
             let class_model = match cd_class_model(all_lines.as_bytes()){
                 Ok(val) => val.1,

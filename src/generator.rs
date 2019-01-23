@@ -38,7 +38,7 @@ pub fn generate_class_model_layout(class_vec: &[Class], rel_vec: &[Relation]) ->
             if !c.class_stereotype.is_empty() {
                 greatest_height += 1;
             }
-            greatest_height += c.content_lines.len() as u32;
+            greatest_height += c.lines.len() as u32;
         }
         if greatest_height > greatest_height_first_half {
             greatest_height_first_half = greatest_height;
@@ -56,7 +56,7 @@ pub fn generate_class_model_layout(class_vec: &[Class], rel_vec: &[Relation]) ->
             if !c.class_stereotype.is_empty() {
                 greatest_height += 1;
             }
-            greatest_height += c.content_lines.len() as u32;
+            greatest_height += c.lines.len() as u32;
         }
         if greatest_height > greatest_height_second_half {
             greatest_height_second_half = greatest_height;
@@ -76,9 +76,9 @@ pub fn generate_class_model_layout(class_vec: &[Class], rel_vec: &[Relation]) ->
     for (i,c) in class_vec.iter().enumerate() {
 
         let mut greatest_width: u32 = 0;
-        for line in c.content_lines.iter() {
-            if line.len() as u32 > greatest_width {
-                greatest_width = line.len() as u32;
+        for line in c.lines.iter() {
+            if line.content.len() as u32 > greatest_width {
+                greatest_width = line.content.len() as u32;
             }
         }
         if !c.class_name.is_empty() {
@@ -101,7 +101,7 @@ pub fn generate_class_model_layout(class_vec: &[Class], rel_vec: &[Relation]) ->
             if !c.class_stereotype.is_empty() {
                 height += 1;
             }
-            height += c.content_lines.len() as u32;
+            height += c.lines.len() as u32;
 
         height *= ::LINE_HEIGHT;
 
