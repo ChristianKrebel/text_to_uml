@@ -28,12 +28,13 @@ Screenshot des Programms:
 ## Funktionsweise
 **Text_to_uml** ist ein Programm zur textuellen Spezifikation von UML-Klassendiagrammen, aus der ein Bild generiert werden kann.
 
-Das Programm besteht aus zwei Teilen: Parser und Layout-Manager. Der Parser ist dafür da, die textuelle Spezifikation einzulesen und zu einer definierten Schnittstelle umzuwandeln, die der Layout-Manager dann übernehmen und auf ein Bild bringen kann.
-Die textuelle Spezifikation wird in einer Textdatei geschrieben, die im selben Verzeichnis liegt, wie das Programm. Anschließend wird das Programm über die command-line gestartet, dabei kann der Name der einzulesenden Datei als Parameter angegeben werden. Wird der Name nicht angegeben, sucht das Programm nach einer "input.txt" Datei. Wird diese nicht gefunden, beendet sich das Programm wieder.
+Das Programm besteht aus mehreren Teilen: *GUI*, *Parser*, *Reader*, *Generator* und *Drawer*. Über die *GUI* kann ein Text per Eingabefeld oder per Datei mithilfe des *Readers* eingelesen werden. Der *Parser* liest die textuelle Spezifikation und wandelt sie zu einer definierten Schnittstelle um, die der *Drawer* und der *Generator* nutzen können. Der *Drawer* zeichnet nämlich das Diagramm anhand der Anordnungen des *Generators*, welcher automatisch berechnet, wie z.B. Klassen und Relationen positioniert werden sollen, und gibt die Bilddaten und -informationen zurück zur *GUI*.  Diese stellt das UML-konforme Diagramm dar und kann es, wenn gewünscht, auch speichern.  
+Zum tieferen Verständnis kann sich auch das passende [Sequenzdiagramm](#ablauf-und-funktionen) angeguckt werden.
 
-Wurde die Datei gefunden, geht der Parser zeilenweise über die Datei und liest die Syntax ein, dazu unten mehr.
-Der Layout-Manager berechnet im Anschluss automatisch die Positionen der Klassen und Relationen auf dem Output-Bild und kümmert sich um das korrekte Aussehen der Inhalte. Dabei werden Formate wie static, abstract (usw.) entsprechend der UML-Definition formatiert, Seperatoren eingefügt und Relationen mit Multiplizitäten beschriftet.
-Zuletzt gibt das Programm das Bild als "output.png" aus.
+Zu beachten:  
+- Als Pfad für z.B. die Textdatei der textuellen Spezifikation wird dasselbe Verzeichnis als Root genutzt, in der das Programm liegt.
+- Wird kein Output-Pfad angegeben, wird das Bild generiert und angezeigt, jedoch nicht gespeichert.
+- Wird ein Input-Pfad und ein Text direkt im Textfeld angegeben, wird das Textfeld bevorzugt.
 
 
 ## Syntax Spezifikation
@@ -54,7 +55,8 @@ Dabei sind folgende Optionen zurzeit für den Parameter verfügbar:
 
 ### Klassendiagramm
 In einem Klassendiagramm gibt es zwei grundlegende Elemente: Klassen und Relationen. Jedes Element wird mit einer Leerzeile von anderen Elementen getrennt.  
-
+  
+  
 #### Klassen
 Die Musterdefinition einer Klasse sieht wie folgt aus:
 
@@ -95,6 +97,8 @@ Ein Beispiel für eine ganze Klasse:
     public static void main()
     public String name()
 
+---
+
 #### Relationen
 Auch Relationen haben eine Musterdefinition:
 
@@ -122,6 +126,8 @@ Es existieren beispielsweise schon die Klassen `Person` und `Angestellter`.
     Inheritance
     Angestellter,Person
     1,1
+
+---
 
 #### Testbeispiel 1
 Im Folgenden findet sich ein Beispiel für ein ganzes UML-Klassendiagramm:
@@ -186,6 +192,7 @@ Im Folgenden findet sich ein Beispiel für ein ganzes UML-Klassendiagramm:
 Welches zu folgendem Bild führt:  
 
 ![Class Model](Class.png)
+  
 
 ### Objektdiagramm
 In einem Ojektdiagramm gibt es zwei grundlegende Elemente: Objekte und Links. Jedes Element wird mit einer Leerzeile von anderen Elementen getrennt.  
@@ -225,6 +232,8 @@ Ein Beispiel für ein ganzes Objekt:
     kategorie:Sterne 3
     name "Platon"
 
+---
+
 #### Links
 Auch Links haben eine Musterdefinition:
 
@@ -249,6 +258,8 @@ Es existieren beispielsweise schon die Objekte "Maren" mit dem internen Namen `m
 
     Link:bedient
     k1,maren
+
+---
 
 #### Testbeispiel 2
 Im Folgenden findet sich ein Beispiel für ein ganzes UML-Objektdiagramm:
