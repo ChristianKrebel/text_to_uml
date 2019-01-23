@@ -8,6 +8,7 @@ rusttype = "0.5.2"
 image = "0.20"
 imageproc = { version = "0.16.0", default-features = false }
 rand = "0.6.0"
+nom = "^4.1"
 
 [dependencies.azul]
 git = "https://github.com/maps4print/azul"
