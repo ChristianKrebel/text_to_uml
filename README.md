@@ -28,8 +28,8 @@ Screenshot des Programms:
 ## Funktionsweise
 **Text_to_uml** ist ein Programm zur textuellen Spezifikation von UML-Klassendiagrammen, aus der ein Bild generiert werden kann.
 
-Das Programm besteht aus mehreren Teilen: *GUI*, *Parser*, *Reader*, *Generator* und *Drawer*. Über die *GUI* kann ein Text per Eingabefeld oder per Datei mithilfe des *Readers* eingelesen werden. Der *Parser* liest die textuelle Spezifikation und wandelt sie zu einer definierten Schnittstelle um, die der *Drawer* und der *Generator* nutzen können. Der *Drawer* zeichnet nämlich das Diagramm anhand der Anordnungen des *Generators*, welcher automatisch berechnet, wie z.B. Klassen und Relationen positioniert werden sollen, und gibt die Bilddaten und -informationen zurück zur *GUI*.  Diese stellt das UML-konforme Diagramm dar und kann es, wenn gewünscht, auch speichern.  
-Zum tieferen Verständnis kann sich auch das passende [Sequenzdiagramm](#ablauf-und-funktionen) angeguckt werden.
+Das Programm besteht aus mehreren Teilen: *GUI*, *Parser*, *Reader*, *Generator* und *Drawer*. Über die *GUI* kann ein Text per Eingabefeld oder per Datei mithilfe des *Readers* eingelesen werden. Der *Parser* liest die textuelle Spezifikation und wandelt sie zu einer definierten Schnittstelle um, die der *Drawer* und der *Generator* nutzen können. Der *Drawer* zeichnet das Diagramm anhand der Anordnungen des *Generators*, welcher automatisch berechnet, wie z.B. Klassen und Relationen positioniert werden sollen, und gibt die Bilddaten und -informationen zurück zur *GUI*. Diese stellt das UML-konforme Diagramm dar und kann es, wenn gewünscht, auch speichern.  
+Zum tieferen Verständnis siehe passendes [Sequenzdiagramm](#ablauf-und-funktionen).
 
 Zu beachten:  
 - Als Pfad für z.B. die Textdatei der textuellen Spezifikation wird dasselbe Verzeichnis als Root genutzt, in der das Programm liegt.
