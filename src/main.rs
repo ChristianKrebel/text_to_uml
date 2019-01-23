@@ -3,12 +3,14 @@ extern crate azul;
 extern crate image;
 extern crate imageproc;
 extern crate rand;
+#[macro_use]
+extern crate nom;
 
 pub(crate) mod parser;
-pub(crate) mod generator;
-pub(crate) mod drawer;
+//pub(crate) mod generator;
+//pub(crate) mod drawer;
 mod reader;
-mod gui;
+//mod gui;
 mod defines;
 use defines::*;
 
@@ -29,7 +31,44 @@ pub const CARD_DIST: u32 = 4;
 fn main() {
     use std::path::Path;
 
-    gui::start();
+    //gui::start();
+// Class:Person\n<<abstract>>\n--\nprotected String name\n--\npublic abstract void shoutName()\n\nClass:Chinese\n--\nprotected String name\n--\npublic void shoutName()\n\nInheritance\nChinese,Person\n1,1\n/Model
+
+    let lines = vec!["Model:Class".to_string(),
+                     "Class:Person".to_string(),
+                     "<<abstract>>".to_string(),
+                     "--".to_string(),
+                     "protected String name".to_string(),
+                     "--".to_string(),
+                     "public abstract void shoutName()".to_string(),
+                     "".to_string(),
+                     "".to_string(),
+                     "Class:Chinese".to_string(),
+                     "--".to_string(),
+                     "protected String name".to_string(),
+                     "--".to_string(),
+                     "public void shoutName()".to_string(),
+                     "".to_string(),
+                     "".to_string(),
+                     "Inheritance".to_string(),
+                     "Chinese,Person".to_string(),
+                     "1,1".to_string(),
+                     "/Model".to_string()];
+
+    let mc = match parser::parse_model(&lines) {
+        Ok(val) => val,
+        Err(err) => {
+            println!("Encountered error while parsing: {}", err);
+            return;
+        }
+    };
+
+    println!("Verifying class model information: {:?}", mc.class_model.unwrap());
+
+//    match parser::parse_model(&lines) {
+//        Ok(val) => println!("Parsing successful! {:?}\n", val),
+//        Err(err) => println!("ERROR parsing the text input: {}\n", err)
+//    };
 
     // So sollten Bilder eigentlich geladen werden:
     // let (input_filename, output_filename) = get_cli_args("input.txt", "output.png");

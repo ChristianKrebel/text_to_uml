@@ -1,4 +1,5 @@
 #![allow(dead_code)]
+#[macro_use]
 
 use std::fs::File;
 use std::io::{Write, BufReader, BufRead};
@@ -9,341 +10,839 @@ use std::collections::HashSet;
 use std::env;
 use std::io::prelude::*;
 use std::str::*;
+use std::str;
 use std::process::exit;
+use std::fs;
+use std::fmt;
+use nom::*;
+use nom;
+use std::fmt::Debug;
 
 use defines::*;
 
 
+
+named!(model_type<&str, ModelType>,
+    do_parse!(
+        ws!(tag_s!("Model:")) >>
+        model: alt!(
+            value!(ModelType::ClassModel, tag_s!("Class"))     |
+            value!(ModelType::ObjectModel, tag_s!("Object"))   |
+            value!(ModelType::PackageModel, tag_s!("Package")) |
+            value!(ModelType::UseCaseModel, tag_s!("UseCase"))
+        ) >>
+        (model)
+    )
+);
+
+named!(model_end<&[u8], &str>,
+    do_parse!(
+        take_while!(is_ws) >>
+        end_tag: value!("/Model", tag!(&b"/Model"[..])) >>
+        (end_tag)
+    )
+);
+
+named!(parse_till_ws<&[u8], &str>,
+    do_parse!(
+        take_while!(is_ws) >>
+        vis: take_while!(is_not_ws) >>
+        (str::from_utf8(vis).unwrap())
+    )
+);
+
+named!(parse_till_newline<&[u8], &str>,
+    do_parse!(
+        take_while!(is_ws) >>
+        vis: take_while!(is_not_newline) >>
+        (str::from_utf8(vis).unwrap())
+    )
+);
+
+named!(parse_till_gt<&[u8], &str>,
+    do_parse!(
+        take_while!(is_ws) >>
+        vis: take_while!(is_not_gt) >>
+        (str::from_utf8(vis).unwrap())
+    )
+);
+
+named!(cd_stereotype<&[u8], String>,
+    do_parse!(
+        take_while!(is_ws) >>
+        tag!(&b"<<"[..]) >>
+        stereotype: parse_till_gt >>
+        tag!(&b">>"[..]) >>
+        (format!("<<{}>>", stereotype))
+    )
+);
+
+named!(cd_class_type<&[u8], (ClassType, String)>,
+    do_parse!(
+        take_while!(is_ws) >>
+        class_type: alt!(
+            value!(ClassType::SimpleClass, tag!(&b"Class"[..]))                   |
+            value!(ClassType::AbstractClass, tag!(&b"AbstractClass"[..]))         |
+            value!(ClassType::VarBorderClass, tag!(&b"VarBorderClass"[..]))       |
+            value!(ClassType::DashedBorderClass, tag!(&b"DashedBorderClass"[..])) |
+            value!(ClassType::ActiveClass, tag!(&b"ActiveClass"[..]))
+        ) >>
+        tag!(&b":"[..]) >>
+        class_name: parse_till_newline >>
+        ((class_type, String::from(class_name)))
+    )
+);
+
+named!(cd_relation_type<&[u8], RelationType>,
+    do_parse!(
+        take_while!(is_ws) >>
+        relation_type: alt!(
+            value!(RelationType::Association, tag!(&b"Association"[..]))       |
+            value!(RelationType::Inheritance, tag!(&b"Inheritance"[..]))       |
+            value!(RelationType::Implementation, tag!(&b"Implementation"[..])) |
+            value!(RelationType::Dependency, tag!(&b"Dependency"[..]))         |
+            value!(RelationType::Aggregation, tag!(&b"Aggregation"[..]))       |
+            value!(RelationType::Composition, tag!(&b"Composition"[..]))
+        ) >>
+        (relation_type)
+    )
+);
+
+named!(cd_relation_direction<&[u8], (String, String)>,
+    do_parse!(
+        take_while!(is_ws) >>
+        rel_from: map!(map!(take_while!(is_not_comma), str::from_utf8), std::result::Result::unwrap) >>
+        tag!(&b","[..]) >>
+        rel_to: parse_till_newline >>
+        ((String::from(rel_from), String::from(rel_to)))
+    )
+);
+
+named!(cd_relation_cardinality<&[u8], (String, String)>,
+    do_parse!(
+        take_while!(is_ws) >>
+        card_from: map!(map!(take_while!(is_not_comma), str::from_utf8), std::result::Result::unwrap) >>
+        tag!(&b","[..]) >>
+        card_to: parse_till_newline >>
+        ((String::from(card_from), String::from(card_to)))
+    )
+);
+
+named!(cd_relation<&[u8], Relation>,
+    do_parse!(
+        rel_type: map!(cd_relation_type, get_fitting_relation_type) >>
+        direction: cd_relation_direction >>
+        cardinalities: map!(opt!(cd_relation_cardinality), get_fitting_relation_cardinality) >>
+        (Relation { border_type: rel_type.0, arrow_type: rel_type.1, from_class: direction.0, to_class: direction.1, from_class_card: cardinalities.0, to_class_card: cardinalities.1 })
+    )
+);
+
+
+
+named!(cd_visibility<&[u8], &str>,
+    do_parse!(
+        take_while!(is_ws) >>
+        vis: alt!(
+            value!("+", tag!(&b"public"[..]))    |
+            value!("#", tag!(&b"protected"[..])) |
+            value!("~", tag!(&b"package"[..]))   |
+            value!("-", tag!(&b"private"[..]))
+        ) >>
+        (vis)
+    )
+);
+
+named!(cd_static_modifier<&[u8], TextDecoration>,
+    ws!(alt!(
+        tag!(&b"static"[..]) => { |_| TextDecoration::Underlined }
+    ))
+);
+
+named!(cd_abstract_modifier<&[u8], TextDecoration>,
+    do_parse!(
+        take_while!(is_ws) >>
+        modif: value!(TextDecoration::Italic, tag!(&b"abstract"[..])) >>
+        (modif)
+    )
+);
+
+named!(cd_variable_pair<&[u8], String>,
+    do_parse!(
+        take_while!(is_ws) >>
+        data_type: parse_till_ws >>
+        var_name: parse_till_ws >>
+        (format!("{}: {}", var_name, data_type))
+    )
+);
+
+named!(cd_method_pair<&[u8], String>,
+    do_parse!(
+        take_while!(is_ws) >>
+        data_type: parse_till_ws >>
+        var_name: parse_till_newline >>
+        (format!("{}: {}", var_name, data_type))
+    )
+);
+
+//--
+named!(cd_horizontal_line<&[u8], Line>,
+    do_parse!(
+        take_while!(is_ws) >>
+        hor_line: value!(TextDecoration::HorizontalLine, tag!(&b"--"[..])) >>
+        ( Line{ content: String::from(""), decor: hor_line } )
+    )
+);
+
+//public static boolean someName3
+named!(cd_member<&[u8], Line>,
+    do_parse!(
+        take_while!(is_ws) >>
+        vis: map!(opt!(cd_visibility), get_fitting_visibility) >>
+        decor: map!(opt!(cd_static_modifier), get_fitting_decor) >>
+        not!(pair!(take_while!(is_ws), tag!(&b"abstract"[..]))) >>
+        variable: cd_variable_pair >>
+        ( Line{ content: format!("{} {}", vis, variable), decor } )
+    )
+);
+
+//public abstract void main()
+named!(cd_method<&[u8], Line>,
+    do_parse!(
+        take_while!(is_ws) >>
+        vis: map!(opt!(cd_visibility), get_fitting_visibility) >>
+        decor: map!(opt!(alt!(
+            cd_static_modifier   |
+            cd_abstract_modifier
+        )), get_fitting_decor) >>
+        variable: cd_method_pair >>
+        ( Line{ content: format!("{} {}", vis, variable), decor } )
+    )
+);
+
+named!(cd_line<&[u8], Line>,
+    do_parse!(
+        line: alt_complete!(
+            cd_horizontal_line |
+            cd_member          |
+            cd_method
+        ) >>
+        (line)
+    )
+);
+
+named!(cd_class<&[u8], Class>,
+    do_parse!(
+        class_type: cd_class_type >>
+        stereotype: map!(opt!(cd_stereotype), get_fitting_stereotype) >>
+        lines: many_till!(cd_line, alt!(tag!(&b"\n\n"[..]) | tag!(&b"\n/Model"[..]))) >>
+        (Class { class_type: class_type.0, class_name: class_type.1, border_width: 1, class_stereotype: stereotype, lines: lines.0 })
+    )
+);
+
+
+named!(cd_class_model<&[u8], ClassModel>,
+    do_parse!(
+        classes: many1!(cd_class) >>
+//        relations: many0!(cd_relation) >>
+        relations: many_till!(cd_relation, pair!(take_while!(is_ws), tag!(&b"/Model"[..]))) >>
+//        tag!(&b"/Model"[..]) >>
+        (ClassModel { classes, relations: relations.0 })
+    )
+);
+
+
+named!(test<&[u8], Vec<String>>,
+    do_parse!(
+        ab_s: many_till!(map!(map!(map!(tag!(&b"ab"[..]), str::from_utf8), std::result::Result::unwrap), String::from), pair!(take_while!(is_ws), tag!(&b"z"[..]))) >>
+        (ab_s.0)
+    )
+);
+
+
+
 pub fn parse_model(lines: &[String]) -> Result<ModelContainer, ParseError> {
 
-    let mut classes = Vec::new();
-    let mut relations = Vec::new();
 
-    lines.reverse();
+    let model_type_str = &*lines[0];
 
-    loop {
-        let opt = lines.pop();
-        if !opt.is_some(){
-            break;
+    let m_type = match model_type(model_type_str) {
+        Ok(val) => val.1,
+        Err(err) => {
+            println!("Encountered error while parsing: {}", err);
+            return Err(ParseError::InvalidModelError);
         }
-        let mut string = opt.unwrap();
-        string.pop();
-
-        let lower = string.to_lowercase();
-        let split_list_lower: Vec<&str> = lower.split(":").collect();
-        let split_list_string: Vec<&str> = string.split(":").collect();
-
-        if split_list_lower.len() == 1{
-            //if split_list_lower.get(0).unwrap()
-            //Case: The header line was not a class, e.g.
-            //println!("Is no class: {}", string);
-
-            let mut arrow_type: RelationArrow = RelationArrow::None;
-            let mut relation_string: &str = split_list_lower.get(0).unwrap();
-            let mut relation_border: BorderType = BorderType::None;
-
-            if relation_string == "assoc" || relation_string == "association" {
-                arrow_type = RelationArrow::Arrow;
-                relation_border = BorderType::Solid;
-            }else if relation_string == "inherit" || relation_string == "inheritance"{
-                arrow_type = RelationArrow::TriangleEmpty;
-                relation_border = BorderType::Solid;
-            }else if relation_string == "implement" || relation_string == "implementation"{
-                arrow_type = RelationArrow::TriangleEmpty;
-                relation_border = BorderType::Dashed;
-            }else if relation_string == "depend" || relation_string == "dependency"{
-                arrow_type = RelationArrow::Arrow;
-                relation_border = BorderType::Dashed;
-            }else if relation_string == "aggregate" || relation_string == "aggregation"{
-                arrow_type = RelationArrow::DiamondEmpty;
-                relation_border = BorderType::Solid;
-            }else if relation_string == "composit" || relation_string == "composition"{
-                arrow_type = RelationArrow::DiamondFilled;
-                relation_border = BorderType::Solid;
-            }else{
-                println!("No RelationType fitting found. '{}'\nAborting...", relation_string);
-                exit(-1);
-            }
-
-            //println!("Value of relation_type: {:?}", relation_type);
-
-            let mut opt_classes = lines.pop();
-
-            if !opt_classes.is_some() {
-                println!("Error in relation syntax: Missing lines following class type definition1");
-                break;
-            }
-
-            let mut classes_str = opt_classes.unwrap();
-            classes_str.pop();
-
-            if classes_str.is_empty() {
-                println!("Error in relation syntax near '{}': Missing lines following class type definition\nAborting...", classes_str);
-                exit(-1);
-            }
-
-            let classes_split = classes_str.split(",");
-            let classes_split_list: Vec<&str> = classes_split.collect();
-
-            if *(classes_split_list.get(0).unwrap()) == classes_str || classes_split_list.len() > 2{ // Invalid
-                println!("Error in relation syntax near '{}': Please enter two classnames seperated by a comma\nAborting...", classes_str);
-                exit(-1);
-            }
-
-            let from_class_name = classes_split_list.get(0).unwrap();
-            let to_class_name = classes_split_list.get(1).unwrap();
-
-            let opt_cards = lines.pop();
-
-            if !opt_cards.is_some() {
-
-                let relation: Relation = Relation {
-                    arrow_type,
-                    border_type: relation_border,
-                    from_class: String::from_str(*from_class_name).unwrap(),
-                    from_class_card: String::new(),
-                    to_class: String::from_str(to_class_name).unwrap(),
-                    to_class_card: String::new(),
-                };
-
-                relations.push(relation);
-                continue;
-            }
-
-            let mut opt_cards_str = opt_cards.unwrap();
-            opt_cards_str.pop();
-
-            // No multiplicities given.
-            if opt_cards_str.is_empty() {
-
-                let mut relation: Relation = Relation {
-                    arrow_type,
-                    border_type: relation_border,
-                    from_class: String::from_str(*from_class_name).unwrap(),
-                    from_class_card: String::new(),
-                    to_class: String::from_str(to_class_name).unwrap(),
-                    to_class_card: String::new(),
-                };
-
-
-                relations.push(relation);
-                continue;
-            }
-
-
-            let mut cards_split = opt_cards_str.split(",");
-            let cards_split_list: Vec<&str> = cards_split.collect();
-
-            if *(cards_split_list.get(0).unwrap()) == opt_cards_str{ // Invalid
-                println!("Error in relation syntax: Please enter two classnames seperated by a comma");
-                break;
-            }
-
-            let mut from_card = cards_split_list.get(0).unwrap();
-            let mut to_card = cards_split_list.get(1).unwrap();
-
-            let mut relation: Relation = Relation {arrow_type, border_type: relation_border, from_class: String::from_str(*from_class_name).unwrap(), from_class_card: String::from_str(from_card).unwrap(), to_class: String::from_str(to_class_name).unwrap(), to_class_card: String::from_str(to_card).unwrap()};
-            println!("Full struct for relation: {:?}", relation);
-
-            relations.push(relation);
-
-
-            let mut opt_empty_line = lines.pop();
-
-            if !opt_empty_line.is_some() {
-                continue;
-            }
-
-            let mut empty_line_str = opt_empty_line.unwrap();
-            empty_line_str.pop();
-
-            //println!("empty_line: '{}'", empty_line_str);
-
-            if opt_cards_str.is_empty() {
-                continue;
-            }
-
-        }else{
-            //Case: The header line was a class
-            //println!("Is class: {}", string);
-
-            /*
-             * Class Type
-             */
-            let mut class_type: ClassType = ClassType::None;
-            let mut class_stereotype: String = String::from("");
-
-            let tmp_string: &str = split_list_lower.get(0).unwrap();
-
-            if tmp_string.starts_with("class") || tmp_string.starts_with("simpleclass"){
-                class_type = ClassType::SimpleClass;
-            }else if tmp_string.starts_with("abstractclass"){
-                class_type = ClassType::AbstractClass;
-                class_stereotype = String::from("<<abstract>>");
-            }else if tmp_string.starts_with("activeclass"){
-                class_type = ClassType::ActiveClass;
-            }else if tmp_string.starts_with("varborderclass"){
-                class_type = ClassType::VarBorderClass;
-            }else if tmp_string.starts_with("dashedbordertclass"){
-                class_type = ClassType::DashedBorderClass;
-            }else{
-                println!("Error in class syntax: ClassType {} not found.", tmp_string);
-            }
-
-            /*
-             * Class Name
-             */
-            let class_name: String = split_list_string.get(1).unwrap().to_string();
-
-
-            /*
-             * Stereotypes
-             */
-            let mut opt_inner = lines.pop();
-            if !opt_inner.is_some() {
-                println!("Error in class syntax: Missing lines following class type definition");
-                break;
-            }
-
-            let mut line_stereo = opt_inner.unwrap();
-
-            if class_name.eq("MyList"){
-                println!("{}", line_stereo);
-            }
-
-            if line_stereo.is_empty() { //No line following the class_name
-                //println!("Error in class syntax: Missing lines following class type definition");
-                let mut content_lines: Vec<String> = Vec::new();
-                let mut content_decor: Vec<TextDecoration> = Vec::new();
-
-                let mut class: Class = Class {border_width: 0, class_name, class_type, content_lines, content_decor, class_stereotype};
-                println!("Full struct for class: {:?}", class);
-
-                classes.push(class);
-
-                continue;
-            }
-
-            //let mut line_stereo_before = String::from(line_stereo)
-            //line_stereo.pop();
-
-            if line_stereo.starts_with("<<") && line_stereo.ends_with(">>\r") && !class_stereotype.is_empty(){
-                line_stereo.pop();
-                class_stereotype = line_stereo;
-            }else{
-                lines.push(line_stereo);
-            }
-
-
-            /*
-             * Content lines
-             */
-            let mut content_lines: Vec<String> = Vec::new();
-            let mut content_decor: Vec<TextDecoration> = Vec::new();
-            //let mut content: HashMap<String, TextDecoration> = HashMap::new();
-
-            loop {
-                opt_inner = lines.pop();
-                if !opt_inner.is_some(){
-                    //println!("Error in class syntax: Missing lines following class type / stereotype definition");
-                    break;
-                }
-                let mut line_inner = opt_inner.unwrap();
-                line_inner.pop();
-
-                if line_inner == "" {
-                    break;
-                }
-
-                if line_inner.eq("--"){
-                    content_lines.push(String::from(""));
-                    content_decor.push(TextDecoration::HorizontalLine);
-                    continue;
-                }
-
-                let mut field_visibility: Visibility = Visibility::None;
-                let mut is_static: bool = false;
-                let mut skip: usize = 0;
-
-                if line_inner.starts_with("private "){
-                    field_visibility = Visibility::Private;
-                    skip = 8;
-                }else if line_inner.starts_with("public "){
-                    field_visibility = Visibility::Public;
-                    skip = 7;
-                }else if line_inner.starts_with("protected "){
-                    field_visibility = Visibility::Protected;
-                    skip = 10;
-                }else if line_inner.starts_with("package "){
-                    field_visibility = Visibility::Package;
-                    skip = 8;
-                }else if line_inner.starts_with("static "){
-                    field_visibility = Visibility::Package;
-                    skip = 7;
-                    is_static = true;
-                }
-
-                line_inner = line_inner.chars().skip(skip).take(line_inner.len()-skip).collect();
-
-
-                if line_inner.starts_with("static "){
-                    skip = 7;
-                    is_static = true;
-
-                    line_inner = line_inner.chars().skip(skip).take(line_inner.len()-skip).collect();
-                }
-
-                let mut split = line_inner.split(" ");
-                let all_in_line: Vec<&str> = split.collect();
-
-                let mut line_left = String::new();
-
-                if all_in_line.len() > 1{
-                    let strEnd: String = all_in_line.get(0).unwrap().to_string();
-                    let mut strStart: String = line_inner.chars().skip(strEnd.len()+1).take(line_inner.len()-(strEnd.len()+1)).collect();
-                    line_left = strStart + ": " + &strEnd;
-                }
-
-
-
-                let mut vis_string: String = String::new();
-
-                if field_visibility == Visibility::Public{
-                    vis_string = String::from("+ ");
-                }else if field_visibility == Visibility::Package{
-                    vis_string = String::from("~ ");
-                }else if field_visibility == Visibility::Protected{
-                    vis_string = String::from("# ");
-                }else if field_visibility == Visibility::Private{
-                    vis_string = String::from("- ");
-                }
-
-                let mut total: String = vis_string + &line_left;
-
-                let mut field_decor: TextDecoration = TextDecoration::None;
-
-                if is_static == true{
-                    field_decor = TextDecoration::Underlined;
-                }
-
-                content_lines.push(total);
-                content_decor.push(field_decor);
-            }
-
-            let class: Class = Class {
-                border_width: 0,
-                class_name,
-                class_type,
-                content_lines,
-                content_decor,
-                class_stereotype
-            };
-
-            classes.push(class);
+    };
+
+    println!("Using model type: {:?}", m_type);
+
+    let mut all_lines = String::from("");
+    let mut count = 0;
+    for (i, line) in lines.iter().enumerate() {
+        if count == 0{
+            count = count + 1;
+            continue;
+
+        } else if count == 1{
+            all_lines = format!("{}", *line);
+        } else {
+            all_lines = format!("{}\n{}", all_lines, *line);
         }
+
+        count = count + count;
     }
 
-    let cm: ClassModel = ClassModel {classes, relations};
+    let mc = match m_type {
+        ModelType::ClassModel => {
+            let class_model = match cd_class_model(all_lines.as_bytes()){
+                Ok(val) => val.1,
+                Err(err) => {
+                    println!("Encountered error while parsing: {}", err);
+                    return Err(ParseError::ParseError);
+                }
+            };
 
-    Ok(cm)
+            ModelContainer {model_type: ModelType::ClassModel, class_model: Some(class_model), object_model: None, package_model: None, use_case_model: None}
+        },
+        ModelType::ObjectModel => {
+            return Err(ParseError::InvalidModelError);
+        },
+        ModelType::PackageModel => {
+            return Err(ParseError::InvalidModelError);
+        },
+        ModelType::UseCaseModel => {
+            return Err(ParseError::InvalidModelError);
+        },
+        ModelType::None => return Err(ParseError::InvalidModelError)
+    };
+
+
+
+    Ok(mc)
+}
+
+
+// =============================================
+//     Helper functions to debug nom Results
+// =============================================
+
+fn confirm_result<T: Debug>(res: &Result<(&str, T), nom::Err<&str>>, message_on_failure: &str) -> bool{
+    match res{
+        Ok(v) => {
+            println!("Parsed successfully: {:?}", v);
+            return true;
+        },
+        Err(e) => {
+            match e{
+                nom::Err::Incomplete(n) => println!("Incomplete: {:?}", n),
+                nom::Err::Error(e) => {
+                    //println!("Error while reading Tags: ErrorKind: {}", e.into_error_kind().description());
+                    println!("Error while parsing: {}", message_on_failure);
+                },
+                nom::Err::Failure(e) => println!("Failure")
+            }
+            return false;
+        }
+    }
+}
+
+fn confirm_result_byte<T: Debug>(res: &Result<(&[u8], T), nom::Err<&[u8]>>, message_on_failure: &str) -> bool{
+    match res{
+        Ok(v) => {
+            let (left, parsed) = v;
+            println!("Parsed successfully: {:?}", str::from_utf8(left));
+            return true;
+        },
+        Err(e) => {
+            match e{
+                nom::Err::Incomplete(n) => println!("Incomplete: {:?}", n),
+                nom::Err::Error(e) => {
+                    //println!("Error while reading Tags: ErrorKind: {}", e.into_error_kind().description());
+                    println!("Error while parsing: {}", message_on_failure);
+                },
+                nom::Err::Failure(e) => println!("Failure")
+            }
+            return false;
+        }
+    }
+}
+
+// =============================================
+
+
+
+// ================================
+//     Mapped functions in nom
+// ================================
+
+fn is_ws(c: u8) -> bool {
+    return nom::is_space(c) || c == b'\n';
+}
+
+fn is_newline(c: u8) -> bool {
+    return c == b'\n';
+}
+
+fn is_not_ws(c: u8) -> bool {
+    return !nom::is_space(c) && c != b'\n';
+}
+
+fn is_not_newline(c: u8) -> bool {
+    return c != b'\n';
+}
+
+fn is_not_gt(c: u8) -> bool {
+    return c != b'>';
+}
+
+fn is_not_comma(c: u8) -> bool {
+    return c != b',';
+}
+
+fn get_fitting_decor(line_decor: Option<TextDecoration>) -> TextDecoration{
+    return match line_decor{
+        Some(t) => {
+            return t;
+        },
+        _ => {
+            return TextDecoration::None;
+        }
+    }
+}
+
+fn get_fitting_visibility(vis: Option<&str>) -> &str{
+    return match vis{
+        Some(t) => t,
+        _ => "~"
+    }
+}
+
+fn get_fitting_stereotype(vis: Option<String>) -> String{
+    return match vis{
+        Some(t) => t,
+        _ => String::from("")
+    }
+}
+
+fn get_fitting_relation_cardinality(vis: Option<(String, String)>) -> (String, String){
+    return match vis{
+        Some(t) => t,
+        _ => (String::from(""), String::from(""))
+    }
+}
+
+fn get_fitting_relation_type(rel_type: RelationType) -> (BorderType, RelationArrow){
+    return match rel_type{
+        RelationType::Association => (BorderType::Solid, RelationArrow::Arrow),
+        RelationType::Inheritance => (BorderType::Solid, RelationArrow::TriangleEmpty),
+        RelationType::Implementation => (BorderType::Dashed, RelationArrow::TriangleEmpty),
+        RelationType::Dependency => (BorderType::Dashed, RelationArrow::Arrow),
+        RelationType::Aggregation => (BorderType::Solid, RelationArrow::DiamondEmpty),
+        RelationType::Composition => (BorderType::Solid, RelationArrow::DiamondFilled),
+        RelationType::None => (BorderType::Solid, RelationArrow::Arrow)
+    }
+}
+
+// ===============================
+
+
+
+
+
+/*
+ * Test code
+ */
+
+#[test]
+fn test_test1(){
+    assert_eq!(test(&b"abababab  z"[..]), Ok((&b""[..], vec![String::from("ab"), String::from("ab"), String::from("ab"), String::from("ab")])));
+}
+
+// +------------------------------------+
+// |          Test model type           |
+// +------------------------------------+
+
+
+
+#[test]
+fn test_model_type1(){
+    assert_eq!(model_type("Model:ClassDiagram"), Ok(("", ModelType::ClassModel)));
+}
+
+#[test]
+fn test_model_type2(){
+    assert_eq!(model_type("        Model:   ObjectDiagram"), Ok(("", ModelType::ObjectModel)));
+}
+
+#[test]
+fn test_model_type3(){
+    assert_eq!(model_type(" Model: PackageDiagram"), Ok(("", ModelType::PackageModel)));
+}
+
+#[test]
+fn test_model_type4(){
+    assert_eq!(model_type("Model: UseCaseDiagram"), Ok(("", ModelType::UseCaseModel)));
+}
+
+
+#[test]
+fn test_parse_until_ws1(){
+    assert_eq!(parse_till_ws(&b"boolean someName2"[..]), Ok((&b" someName2"[..], "boolean")));
+}
+
+#[test]
+fn test_parse_until_ws2(){
+    assert_eq!(parse_till_ws(&b"     boolean someName2"[..]), Ok((&b" someName2"[..], "boolean")));
+}
+
+
+#[test]
+fn test_stereotype1(){
+    assert_eq!(cd_stereotype(&b" <<abstract>> "[..]), Ok((&b" "[..], String::from("<<abstract>>"))));
+}
+
+
+
+// +------------------------------------+
+// |         Test CD Visibility         |
+// +------------------------------------+
+
+
+#[test]
+fn test_cd_visibility1(){
+    assert_eq!(cd_visibility(&b"public"[..]), Ok((&b""[..], "+")));
+}
+
+#[test]
+fn test_cd_visibility2(){
+    assert_eq!(cd_visibility(&b"  public "[..]), Ok((&b" "[..], "+")));
+}
+
+#[test]
+fn test_cd_visibility3(){
+    let vis = match cd_visibility(&b"sumTingWong"[..]){
+        Ok(val) => val,
+        Err(err) => {
+            assert!(true);
+            return;
+        }
+    };
+
+    assert!(false, "Visibility parsing unsuccessful: {:?}", vis);
+}
+
+#[test]
+fn test_cd_visibility4(){
+    assert_eq!(cd_visibility(&b"  private  "[..]), Ok((&b"  "[..], "-")));
+}
+
+
+#[test]
+fn test_parse_till_gt(){
+    assert_eq!(parse_till_gt(&b"  sumWeirdStr<>sdsd "[..]), Ok((&b">sdsd "[..], "sumWeirdStr<")));
+}
+
+
+
+//#[test]
+//fn test_cd_horizontal_line(){
+//    assert_eq!(cd_horizontal_line(&b"  -- "[..]), Ok((&b" "[..], (String::from(""), TextDecoration::HorizontalLine))));
+//}
+
+
+
+#[test]
+fn test_cd_variable_pair(){
+    assert_eq!(cd_variable_pair(&b"  boolean someVarName "[..]), Ok((&b" "[..], String::from("someVarName: boolean"))));
+}
+
+// +------------------------------------+
+// |   Test class diagram member line   |
+// +------------------------------------+
+
+#[test]
+fn test_cd_member1(){
+    let line: Line = match cd_member(&b"  public static boolean someName "[..]){
+        Ok(val) => val.1,
+        Err(err) => {
+            assert!(false, "Line parsing unsuccessful: {}", err);
+            return;
+        }
+    };
+
+    assert_eq!(line.content, "+ someName: boolean");
+    assert_eq!(line.decor, TextDecoration::Underlined);
+}
+
+#[test]
+fn test_cd_member2(){
+    let line: Line = match cd_member(&b"  private SumLongClass someOtherName "[..]){
+        Ok(val) => val.1,
+        Err(err) => {
+            assert!(false, "Line parsing unsuccessful: {}", err);
+            return;
+        }
+    };
+
+    assert_eq!(line.content, "- someOtherName: SumLongClass");
+    assert_eq!(line.decor, TextDecoration::None);
+}
+
+#[test]
+fn test_cd_member3(){
+    let line: Line = match cd_member(&b"  protected static int number "[..]){
+        Ok(val) => val.1,
+        Err(err) => {
+            assert!(false, "Line parsing unsuccessful: {}", err);
+            return;
+        }
+    };
+
+    assert_eq!(line.content, "# number: int");
+    assert_eq!(line.decor, TextDecoration::Underlined);
+}
+
+#[test]
+fn test_cd_member4(){
+    let line: Line = match cd_member(&b"  int number "[..]){
+        Ok(val) => val.1,
+        Err(err) => {
+            assert!(false, "Line parsing unsuccessful: {}", err);
+            return;
+        }
+    };
+
+    assert_eq!(line.content, "~ number: int");
+    assert_eq!(line.decor, TextDecoration::None);
+}
+
+
+#[test]
+fn test_cd_method1(){
+    let line: Line = match cd_method(&b"  public abstract void main()\n "[..]){
+        Ok(val) => val.1,
+        Err(err) => {
+            assert!(false, "Line parsing unsuccessful: {}", err);
+            return;
+        }
+    };
+
+    assert_eq!(line.content, "+ main(): void");
+    assert_eq!(line.decor, TextDecoration::Italic);
+}
+
+#[test]
+fn test_cd_method2(){
+    let line: Line = match cd_method(&b"  static Boolean someFunc()\n "[..]){
+        Ok(val) => val.1,
+        Err(err) => {
+            assert!(false, "Line parsing unsuccessful: {}", err);
+            return;
+        }
+    };
+
+    assert_eq!(line.content, "~ someFunc(): Boolean");
+    assert_eq!(line.decor, TextDecoration::Underlined);
+}
+
+#[test]
+fn test_cd_method3(){
+    let line: Line = match cd_method(&b" public abstract void shoutName()\n\n "[..]){
+        Ok(val) => val.1,
+        Err(err) => {
+            assert!(false, "Line parsing unsuccessful: {}", err);
+            return;
+        }
+    };
+
+    assert_eq!(line.content, "+ shoutName(): void");
+    assert_eq!(line.decor, TextDecoration::Italic);
+}
+
+
+#[test]
+fn test_cd_method4(){
+    let line: Line = match cd_method(&b"\npublic abstract void shoutName()\n\nClass:Chinese\n--\n"[..]){
+        Ok(val) => val.1,
+        Err(err) => {
+            assert!(false, "Line parsing unsuccessful: {}", err);
+            return;
+        }
+    };
+
+    assert_eq!(line.content, "+ shoutName(): void");
+    assert_eq!(line.decor, TextDecoration::Italic);
+}
+
+
+
+
+
+
+#[test]
+fn test_cd_line1(){
+    let line: Line = match cd_line(&b"  static Boolean someFunc()\n "[..]){
+        Ok(val) => val.1,
+        Err(err) => {
+            assert!(false, "Line parsing unsuccessful: {}", err);
+            return;
+        }
+    };
+
+    assert_eq!(line.content, "~ someFunc(): Boolean");
+    assert_eq!(line.decor, TextDecoration::Underlined);
+}
+
+#[test]
+fn test_cd_class_type1(){
+    let class_def: (ClassType, String) = match cd_class_type(&b"Class:SomeThing\n "[..]){
+        Ok(val) => val.1,
+        Err(err) => {
+            assert!(false, "ClassType parsing unsuccessful: {}", err);
+            return;
+        }
+    };
+
+    assert_eq!(class_def.0, ClassType::SimpleClass);
+    assert_eq!(class_def.1, String::from("SomeThing"));
+}
+
+#[test]
+fn test_cd_class_type2(){
+    let class_def: (ClassType, String) = match cd_class_type(&b"Class:Asdf\n<<interface>> "[..]){
+        Ok(val) => val.1,
+        Err(err) => {
+            assert!(false, "ClassType parsing unsuccessful: {}", err);
+            return;
+        }
+    };
+
+    assert_eq!(class_def.0, ClassType::SimpleClass);
+    assert_eq!(class_def.1, String::from("Asdf"));
+}
+
+
+
+/*
+ Complete class test
+*/
+
+#[test]
+fn test_cd_class_complete1(){
+    let class: Class = match cd_class(&b" Class:TolleKlasse\nprivate abstract void enterText()\n\n "[..]){
+        Ok(val) => {
+            println!("Found class: {:?}", val.1);
+            val.1
+        },
+        Err(err) => {
+            assert!(false, "Class parsing unsuccessful: {}", err);
+            return;
+        }
+    };
+
+    assert_eq!(class.class_type, ClassType::SimpleClass);
+    assert_eq!(class.class_name, String::from("TolleKlasse"));
+    assert_eq!(class.class_stereotype, String::from(""));
+}
+
+#[test]
+fn test_cd_class_complete2(){
+    let class: Class = match cd_class(&b" Class:TolleKlasse\n<<interfacebook>>\n--\n/Model"[..]){
+        Ok(val) => {
+            println!("Found class: {:?}", val.1);
+            val.1
+        },
+        Err(err) => {
+            assert!(false, "Class parsing unsuccessful: {}", err);
+            return;
+        }
+    };
+
+    assert_eq!(class.class_type, ClassType::SimpleClass);
+    assert_eq!(class.class_name, String::from("TolleKlasse"));
+    assert_eq!(class.class_stereotype, String::from("<<interfacebook>>"));
+}
+
+
+#[test]
+fn test_cd_class_complete3(){
+    let class: Class = match cd_class(&b" Class:Person\n<<abstract>>\n--\nprotected String name\n--\npublic static void shoutName()\n\nClass:Chinese\n--\nprotected String name\n--\npublic void shoutName()\n\nInheritance\nChinese,Person\n1,1\n/Model "[..]){
+        Ok(val) => {
+            println!("Found class: {:?}", val.1);
+            val.1
+        },
+        Err(err) => {
+            assert!(false, "Class parsing unsuccessful: {}", err);
+            return;
+        }
+    };
+
+    assert_eq!(class.class_type, ClassType::SimpleClass);
+    assert_eq!(class.class_name, String::from("Person"));
+    assert_eq!(class.class_stereotype, String::from("<<abstract>>"));
+}
+
+
+/*
+ Complete Relation test
+*/
+
+#[test]
+fn test_cd_relation_complete1(){
+    let relation: Relation = match cd_relation(&b"Association\nA,B\n1..n,1\n"[..]){
+        Ok(val) => {
+            println!("Found relation: {:?}", val.1);
+            val.1
+        },
+        Err(err) => {
+            assert!(false, "Relation parsing unsuccessful: {}", err);
+            return;
+        }
+    };
+
+    assert_eq!(relation.border_type, BorderType::Solid);
+    assert_eq!(relation.arrow_type, RelationArrow::Arrow);
+    assert_eq!(relation.from_class, String::from("A"));
+    assert_eq!(relation.to_class, String::from("B"));
+    assert_eq!(relation.from_class_card, String::from("1..n"));
+    assert_eq!(relation.to_class_card, String::from("1"));
+}
+
+
+
+
+#[test]
+fn test_cd_class_model_complete1(){
+    let cm: ClassModel = match cd_class_model(&b"Class:Person\n<<abstract>>\n--\nprotected String name\n--\npublic abstract void shoutName()\n\nClass:Chinese\n--\nprotected String name\n--\npublic void shoutName()\n\nInheritance\nChinese,Person\n1,1\n/Model "[..]){
+        Ok(val) => {
+            println!("Found class model: {:?}", val.1);
+            val.1
+        },
+        Err(err) => {
+            match &err{
+                Err::Error(c) => {
+                    println!("Was error: {:?}", c.clone().into_error_kind());
+
+                },
+                Err::Failure(c) => {println!("Was failure: {:?}", c)},
+                Err::Incomplete(n) => {println!("Was incomplete: {:?}", n)},
+            }
+
+
+
+            assert!(false, "Class Model parsing unsuccessful: {}", err);
+            return;
+        }
+    };
+
+    let classes = cm.classes;
+    for class in &classes {
+        println!("Class: {:?}", class);
+    }
+
+    let relations = cm.relations;
+    for relation in &relations {
+        println!("Relation: {:?}", relation);
+    }
+
+//    assert!(false);
 }

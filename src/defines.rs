@@ -45,24 +45,24 @@ pub struct General {
 
 #[derive(Debug)]
 pub enum ParseError {
-    NotFound,
-    InternalServerError,
+    InvalidModelError,
+    ParseError,
 }
 
 
 impl fmt::Display for ParseError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
-            Error::NotFound => f.write_str("NotFound"),
-            Error::InternalServerError => f.write_str("InternalServerError"),
+            ParseError::InvalidModelError => f.write_str("InvalidModelError"),
+            ParseError::ParseError => f.write_str("ParseError"),
         }
     }
 }
 impl StdError for ParseError {
     fn description(&self) -> &str {
         match *self {
-            Error::NotFound => "Record not found",
-            Error::InternalServerError => "Internal server error",
+            ParseError::InvalidModelError => "The provided model is not valid!",
+            ParseError::ParseError => "The syntax is wrong",
         }
     }
 }
@@ -125,13 +125,18 @@ pub enum TextDecoration{
 }
 
 #[derive(Debug)]
+pub struct Line{
+    pub content: String,
+    pub decor: TextDecoration
+}
+
+#[derive(Debug)]
 pub struct Class{
     pub class_type: ClassType,
     pub class_name: String,
     pub class_stereotype: String,
     pub border_width: i32,
-    pub content_lines: Vec<String>,
-    pub content_decor: Vec<TextDecoration>
+    pub lines: Vec<Line>
 }
 
 #[derive(Debug)]
@@ -259,10 +264,10 @@ pub struct UseCaseModel{
 #[derive(Debug)]
 pub struct ModelContainer{
     pub model_type: ModelType,
-    pub class_model: ClassModel,
-    pub object_model: ObjectModel,
-    pub package_model: PackageModel,
-    pub use_case_model: UseCaseModel
+    pub class_model: Option<ClassModel>,
+    pub object_model: Option<ObjectModel>,
+    pub package_model: Option<PackageModel>,
+    pub use_case_model: Option<UseCaseModel>
 }
 
 #[derive(Debug)]
@@ -271,7 +276,8 @@ pub enum ModelType{
     ClassModel,
     ObjectModel,
     PackageModel,
-    UseCaseModel
+    UseCaseModel,
+    None
 }
 
 trait Modeltype {
