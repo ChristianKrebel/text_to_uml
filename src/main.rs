@@ -17,15 +17,19 @@ use defines::*;
 //========== Global constants ==========
 pub const LINE_HEIGHT: u32 = 30;
 pub const LETTER_WIDTH: u32 = 16;
+pub const LETTER_WIDTH_ACCURATE: u32 = LETTER_WIDTH - 4;
 pub const PADDING_LEFT: u32 = 8;
 pub const PADDING_TOP: u32 = 2;
 pub const RELATION_STICK: u32 = 50;
 pub const DASHED_LENGTH: u32 = 5;
 pub const DASHED_LENGTH2: u32 = DASHED_LENGTH * 5;
 pub const REL_GAP_DISTANCE: f32 = 25.0;
+pub const LINK_GAP_DISTANCE: f32 = 55.0;
 pub const ARROW_SIZE: u32 = 20;
 pub const ACTIVE_PADDING: u32 = PADDING_LEFT * 2;
 pub const CARD_DIST: u32 = 4;
+pub const ROLE_NAME_DIST: u32 = 8;
+pub const ROLE_NAME_ARROW_SIZE: u32 = 15;
 //========================================
 
 fn main() {
