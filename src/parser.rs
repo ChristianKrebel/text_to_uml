@@ -99,13 +99,13 @@ pub fn parse_model(lines: &[String]) -> Result<ModelContainer, ParseError> {
     let mut links: Vec<Link> = Vec::new();
     let mut content_lines: Vec<String> = Vec::new();
     content_lines.push(String::from("kategorie: Sterne = 3"));
-    content_lines.push(String::from("name = 'Platon'"));
+    content_lines.push(String::from("name = \"Platon\""));
     let mut content_lines2: Vec<String> = Vec::new();
-    content_lines2.push(String::from("status = 'König'"));
+    content_lines2.push(String::from("status = \"König\""));
     content_lines2.push(String::from("geldbetrag: EUR = 300"));
     content_lines2.push(String::from("hunger = true"));
     let mut content_lines3: Vec<String> = Vec::new();
-    content_lines3.push(String::from("status = 'König'"));
+    content_lines3.push(String::from("status = \"König\""));
     content_lines3.push(String::from("geldbetrag: EUR = 20"));
     content_lines3.push(String::from("hunger = true"));
     let mut content_lines4: Vec<String> = Vec::new();
