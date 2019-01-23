@@ -138,12 +138,14 @@ Im Folgenden findet sich ein Beispiel für ein ganzes UML-Klassendiagramm:
     Model:Class
     
     AbstractClass:Person
+    --
     private String name
     private String vorname
     --
     public String getFullName()
 
     Class:Angestellter
+    --
     private static int ID
     private String position
     --
@@ -151,6 +153,7 @@ Im Folgenden findet sich ein Beispiel für ein ganzes UML-Klassendiagramm:
     public void auftragBearbeiten()
 
     Class:Auftrag
+    --
     private MyList<Item> inhalt
     private boolean done
     --
@@ -159,6 +162,7 @@ Im Folgenden findet sich ein Beispiel für ein ganzes UML-Klassendiagramm:
     public ArrayList<Item> getInhalt()
 
     Class:Item
+    --
     private String description
     private int singlePrice
     private int countInStock
