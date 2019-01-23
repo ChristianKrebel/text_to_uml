@@ -38,10 +38,10 @@ pub const ROLE_NAME_ARROW_SIZE: u32 = 15;
 fn main() {
     use std::path::Path;
 
-    //gui::start();
+    gui::start();
 // Class:Person\n<<abstract>>\n--\nprotected String name\n--\npublic abstract void shoutName()\n\nClass:Chinese\n--\nprotected String name\n--\npublic void shoutName()\n\nInheritance\nChinese,Person\n1,1\n/Model
 
-    let lines = vec!["Model:Class".to_string(),
+    /*let lines = vec!["Model:Class".to_string(),
                      "Class:Person".to_string(),
                      "<<abstract>>".to_string(),
                      "--".to_string(),
@@ -74,7 +74,7 @@ fn main() {
         }
     };
 
-    println!("Verifying class model information: {:?}", mc.class_model.unwrap());
+    println!("Verifying class model information: {:?}", mc.class_model.unwrap());*/
 
 //    match parser::parse_model(&lines) {
 //        Ok(val) => println!("Parsing successful! {:?}\n", val),
