@@ -243,14 +243,73 @@ named!(cd_class<&[u8], Class>,
 named!(cd_class_model<&[u8], ClassModel>,
     do_parse!(
         classes: many1!(cd_class) >>
-//        relations: many0!(cd_relation) >>
         relations: many_till!(cd_relation, pair!(take_while!(is_ws), tag!(&b"/Model"[..]))) >>
-//        tag!(&b"/Model"[..]) >>
         (ClassModel { classes, relations: relations.0 })
     )
 );
 
 
+
+
+// ======= ObjectModel =======
+
+named!(obj_object_name<&[u8], String>,
+    do_parse!(
+        take_while!(is_ws) >>
+        tag!(&b"Object:"[..]) >>
+        obj_name: parse_till_newline >>
+        ( String::from(obj_name) )
+    )
+);
+
+named!(obj_object_title<&[u8], String>,
+    do_parse!(
+        take_while!(is_ws) >>
+        obj_disp_name: map!(map!(take_while!(is_not_colon), str::from_utf8), std::result::Result::unwrap) >>
+        obj_disp_class: parse_till_newline >>
+        ( format!("{} {}", String::from(obj_disp_name), String::from(obj_disp_class)) )
+    )
+);
+
+//<AttributName>[:<AttributTyp>] <AttributInhalt>
+named!(obj_attribute_name_type<&[u8], (String, String)>,
+    do_parse!(
+        attrib_name: alt_complete!(
+            map!(map!(take_while!(is_not_colon), str::from_utf8), std::result::Result::unwrap) |
+
+        )
+        ( format!("{} {}", String::from(obj_disp_name), String::from(obj_disp_class)) )
+    )
+);
+
+named!(obj_line<&[u8], String>,
+    do_parse!(
+        take_while!(is_ws) >>
+        attrib_name_type: map!(take_while!(is_not_ws), obj_attribute_name_type) >>
+        attrib_content: parse_till_newline >>
+        ( format!("{} {}", String::from(obj_disp_name), String::from(obj_disp_class)) )
+    )
+);
+
+named!(obj_link<&[u8], Link>,
+    do_parse!(
+        take_while!(is_ws) >>
+        tag!(&b"Link"[..]) >>
+        link_name: map!(opt!(parse_till_newline), get_fitting_link_name) >>
+        link_direction: cd_relation_direction >>
+        link_roles: map!(opt!(cd_relation_direction), get_fitting_link_roles) >>
+        ( Link { link_name, from_object: link_direction.0, to_object: link_direction.1, from_object_role: link_roles.0, to_object_role: link_roles.1 } )
+    )
+);
+
+
+
+
+
+
+
+
+// Test parser
 named!(test<&[u8], Vec<String>>,
     do_parse!(
         ab_s: many_till!(map!(map!(map!(tag!(&b"ab"[..]), str::from_utf8), std::result::Result::unwrap), String::from), pair!(take_while!(is_ws), tag!(&b"z"[..]))) >>
@@ -398,6 +457,14 @@ fn is_not_comma(c: u8) -> bool {
     return c != b',';
 }
 
+fn is_not_colon(c: u8) -> bool {
+    return c != b':';
+}
+
+fn is_not_colon_or_ws(c: u8) -> bool {
+    return c != b':' && c != b' ';
+}
+
 fn get_fitting_decor(line_decor: Option<TextDecoration>) -> TextDecoration{
     return match line_decor{
         Some(t) => {
@@ -439,6 +506,27 @@ fn get_fitting_relation_type(rel_type: RelationType) -> (BorderType, RelationArr
         RelationType::Aggregation => (BorderType::Solid, RelationArrow::DiamondEmpty),
         RelationType::Composition => (BorderType::Solid, RelationArrow::DiamondFilled),
         RelationType::None => (BorderType::Solid, RelationArrow::Arrow)
+    }
+}
+
+fn get_fitting_attribute_type(vis: Option<&str>) -> String{
+    return match vis{
+        Some(t) => String::from(t),
+        _ => String::from("")
+    }
+}
+
+fn get_fitting_link_name(vis: Option<&str>) -> String{
+    return match vis{
+        Some(t) => String::from(t),
+        _ => String::from("")
+    }
+}
+
+fn get_fitting_link_roles(vis: Option<(String, String)>) -> (String, String){
+    return match vis{
+        Some(t) => t,
+        _ => (String::from(""), String::from(""))
     }
 }
 
