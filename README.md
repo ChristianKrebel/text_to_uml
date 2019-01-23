@@ -213,7 +213,7 @@ Dabei stehen die Parameter für:
 
 `<KlasseDesObjekts>` - Der Typ des Objekts bzw. deren Klasse. Dies hat nichts mit dem Klassendiagramm zu tun und kann ein beliebeiger String sein.
 
-`[Inhalt...]` - Der Inhalt der Klasse. Dabei wird jede Zeile nochmal aufgeteilt in:
+`[Inhalt...]` - Der Inhalt des Objekts. Dabei wird jede Zeile nochmal aufgeteilt in:
 
 **\<AttributName\>[:\<AttributTyp\>] \<AttributInhalt\>**
 
