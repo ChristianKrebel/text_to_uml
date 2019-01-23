@@ -40,40 +40,77 @@ fn main() {
     gui::start();
 // Class:Person\n<<abstract>>\n--\nprotected String name\n--\npublic abstract void shoutName()\n\nClass:Chinese\n--\nprotected String name\n--\npublic void shoutName()\n\nInheritance\nChinese,Person\n1,1\n/Model
 
-    /*let lines = vec!["Model:Class".to_string(),
-                     "Class:Person".to_string(),
-                     "<<abstract>>".to_string(),
-                     "--".to_string(),
-                     "protected String name".to_string(),
-                     "--".to_string(),
-                     "public abstract void shoutName()".to_string(),
-                     "".to_string(),
-                     "".to_string(),
-                     "Class:Chinese".to_string(),
-                     "--".to_string(),
-                     "protected String name".to_string(),
-                     "--".to_string(),
-                     "public void shoutName()".to_string(),
-                     "".to_string(),
-                     "".to_string(),
-                     "Inheritance".to_string(),
-                     "Chinese,Person".to_string(),
-                     "1,1".to_string(),
-                     "/Model".to_string()];
-    let current_working_directory = current_dir().ok().and_then(|p| Some(p.to_str().unwrap_or("/").to_string())).unwrap_or_default();;
-    let stringo = match reader::read_from_file(&*format!("{}/{}", current_working_directory, "input.txt")) {
-        Ok(val) => val,
-        Err(err) => return,
-    };
-    let mc = match parser::parse_model(&stringo) {
-        Ok(val) => val,
-        Err(err) => {
-            println!("Encountered error while parsing: {}", err);
-            return;
-        }
-    };
+    /*
+Model:Class
 
-    println!("Verifying class model information: {:?}", mc.class_model.unwrap());*/
+AbstractClass:Person
+--
+private String name
+private String vorname
+--
+public static String getFullName()
+
+Class:Angestellter
+--
+private static int ID
+private String<ll> position
+--
+public Auftrag auftragErstellen()
+public void auftragBearbeiten<lol>()
+
+Class:Auftrag
+--
+private MyList<Item> inhalt
+private boolean done
+--
+public void setDone(booleanisDone)
+public int getCumulativePrice()
+public ArrayList<Item> getInhalt()
+
+Class:Item
+--
+private String description
+
+/Model
+*/
+
+
+
+//    let lines = vec!["Model:Class".to_string(),
+//                     "AbstractClass:Person".to_string(),
+//                     "--".to_string(),
+//                     "protected String name".to_string(),
+//                     "protected String vorname".to_string(),
+//                     "--".to_string(),
+//                     "public static String getFullName()".to_string(),
+//                     "".to_string(),
+//                     "Class:Angestellter".to_string(),
+//                     "--".to_string(),
+//                     "private static int ID".to_string(),
+//                     "private String<ll> position".to_string(),
+//                     "".to_string(),
+//                     "".to_string(),
+//                     "".to_string(),
+//                     "".to_string(),
+//                     "".to_string(),
+//                     "".to_string(),
+//                     "".to_string(),
+//                     "".to_string(),
+//                     "/Model".to_string()];
+//    let current_working_directory = current_dir().ok().and_then(|p| Some(p.to_str().unwrap_or("/").to_string())).unwrap_or_default();;
+//    let stringo = match reader::read_from_file(&*format!("{}/{}", current_working_directory, "input.txt")) {
+//        Ok(val) => val,
+//        Err(err) => return,
+//    };
+//    let mc = match parser::parse_model(&stringo) {
+//        Ok(val) => val,
+//        Err(err) => {
+//            println!("Encountered error while parsing: {}", err);
+//            return;
+//        }
+//    };
+//
+//    println!("Verifying class model information: {:?}", mc.class_model.unwrap());
 
 //    match parser::parse_model(&lines) {
 //        Ok(val) => println!("Parsing successful! {:?}\n", val),

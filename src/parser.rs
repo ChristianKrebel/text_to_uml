@@ -120,7 +120,8 @@ named!(cd_relation_direction<&[u8], (String, String)>,
 
 named!(cd_relation_cardinality<&[u8], (String, String)>,
     do_parse!(
-        take_while!(is_ws) >>
+        tag!(&b"\n"[..]) >>
+        not!(tag!(&b"\n"[..])) >>
         card_from: map!(map!(take_while!(is_not_comma), str::from_utf8), std::result::Result::unwrap) >>
         tag!(&b","[..]) >>
         card_to: parse_till_newline >>
@@ -179,8 +180,10 @@ named!(cd_method_pair<&[u8], String>,
     do_parse!(
         take_while!(is_ws) >>
         data_type: parse_till_ws >>
-        var_name: parse_till_newline >>
-        (format!("{}: {}", var_name, data_type))
+        var_name: map!(map!(take_while!(is_not_ob_or_newline), str::from_utf8), std::result::Result::unwrap) >>
+        tag!(&b"("[..]) >>
+        params: parse_till_newline >>
+        (format!("{}({}: {}", var_name, params, data_type))
     )
 );
 
@@ -215,7 +218,7 @@ named!(cd_method<&[u8], Line>,
             cd_abstract_modifier
         )), get_fitting_decor) >>
         variable: cd_method_pair >>
-        ( Line{ content: format!("{} {}", vis, variable), decor } )
+        ( Line{ content: format!("{}{}", vis, variable), decor } )
     )
 );
 
@@ -223,8 +226,8 @@ named!(cd_line<&[u8], Line>,
     do_parse!(
         line: alt_complete!(
             cd_horizontal_line |
-            cd_member          |
-            cd_method
+            cd_method          |
+            cd_member
         ) >>
         (line)
     )
@@ -288,7 +291,7 @@ pub fn parse_model(lines: &[String]) -> Result<ModelContainer, ParseError> {
             all_lines = format!("{}\n{}", all_lines, *line);
         }
 
-        count = count + count;
+        count = count + 1;
     }
 
     let mut mc = match m_type {
@@ -398,6 +401,10 @@ fn is_not_comma(c: u8) -> bool {
     return c != b',';
 }
 
+fn is_not_ob_or_newline(c: u8) -> bool {
+    return c != b'(' && c != b'\n';
+}
+
 fn get_fitting_decor(line_decor: Option<TextDecoration>) -> TextDecoration{
     return match line_decor{
         Some(t) => {
@@ -465,22 +472,22 @@ fn test_test1(){
 
 #[test]
 fn test_model_type1(){
-    assert_eq!(model_type("Model:ClassDiagram"), Ok(("", ModelType::ClassModel)));
+    assert_eq!(model_type("Model:Class"), Ok(("", ModelType::ClassModel)));
 }
 
 #[test]
 fn test_model_type2(){
-    assert_eq!(model_type("        Model:   ObjectDiagram"), Ok(("", ModelType::ObjectModel)));
+    assert_eq!(model_type("        Model:   Object"), Ok(("", ModelType::ObjectModel)));
 }
 
 #[test]
 fn test_model_type3(){
-    assert_eq!(model_type(" Model: PackageDiagram"), Ok(("", ModelType::PackageModel)));
+    assert_eq!(model_type(" Model: Package"), Ok(("", ModelType::PackageModel)));
 }
 
 #[test]
 fn test_model_type4(){
-    assert_eq!(model_type("Model: UseCaseDiagram"), Ok(("", ModelType::UseCaseModel)));
+    assert_eq!(model_type("Model: UseCase"), Ok(("", ModelType::UseCaseModel)));
 }
 
 
@@ -673,6 +680,32 @@ fn test_cd_method4(){
     assert_eq!(line.decor, TextDecoration::Italic);
 }
 
+#[test]
+fn test_cd_method_with_params(){
+    let line: Line = match cd_method(&b" public abstract void shoutName(int amount)\n\n "[..]){
+        Ok(val) => val.1,
+        Err(err) => {
+            assert!(false, "Line parsing unsuccessful: {}", err);
+            return;
+        }
+    };
+
+    assert_eq!(line.content, "+ shoutName(int amount): void");
+    assert_eq!(line.decor, TextDecoration::Italic);
+}
+
+#[test]
+fn test_cd_method_pair_params(){
+    let line: String = match cd_method_pair(&b" void shoutName(int amount)\n\n "[..]){
+        Ok(val) => val.1,
+        Err(err) => {
+            assert!(false, "Line parsing unsuccessful: {}", err);
+            return;
+        }
+    };
+
+    assert_eq!(line, " shoutName(int amount): void");
+}
 
 
 
@@ -787,7 +820,7 @@ fn test_cd_class_complete3(){
 */
 
 #[test]
-fn test_cd_relation_complete1(){
+fn test_cd_relation_complete_with_card(){
     let relation: Relation = match cd_relation(&b"Association\nA,B\n1..n,1\n"[..]){
         Ok(val) => {
             println!("Found relation: {:?}", val.1);
@@ -805,6 +838,27 @@ fn test_cd_relation_complete1(){
     assert_eq!(relation.to_class, String::from("B"));
     assert_eq!(relation.from_class_card, String::from("1..n"));
     assert_eq!(relation.to_class_card, String::from("1"));
+}
+
+#[test]
+fn test_cd_relation_complete_no_card(){
+    let relation: Relation = match cd_relation(&b"Association\nA,B\n\n/Model"[..]){
+        Ok(val) => {
+            println!("Found relation: {:?}", val.1);
+            val.1
+        },
+        Err(err) => {
+            assert!(false, "Relation parsing unsuccessful: {}", err);
+            return;
+        }
+    };
+
+    assert_eq!(relation.border_type, BorderType::Solid);
+    assert_eq!(relation.arrow_type, RelationArrow::Arrow);
+    assert_eq!(relation.from_class, String::from("A"));
+    assert_eq!(relation.to_class, String::from("B"));
+    assert_eq!(relation.from_class_card, String::from(""));
+    assert_eq!(relation.to_class_card, String::from(""));
 }
 
 

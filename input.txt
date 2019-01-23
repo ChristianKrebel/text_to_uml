@@ -1,31 +1,57 @@
 Model:Class
 
 AbstractClass:Person
---
 private String name
 private String vorname
 --
-public static String getFullName()
+public String getFullName()
 
 Class:Angestellter
---
 private static int ID
-private String<ll> position
+private String position
 --
 public Auftrag auftragErstellen()
-public void auftragBearbeiten<lol>()
+public void auftragBearbeiten()
 
 Class:Auftrag
---
 private MyList<Item> inhalt
 private boolean done
 --
-public void setDone(booleanisDone)
+public void setDone(boolean isDone)
 public int getCumulativePrice()
 public ArrayList<Item> getInhalt()
 
 Class:Item
---
 private String description
+private int singlePrice
+private int countInStock
+--
+public String getDescription()
+public int getSinglePrice()
+public int getCountInStock()
+public void changeCountInStock(int amount)
+
+Class:MyList
+
+Class:List
+<<interface>>
+
+Inheritance
+Angestellter,Person
+1,1
+
+Association
+Angestellter,Auftrag
+0..n,1
+
+Aggregation
+Item,Auftrag
+1,1..n
+
+Implementation
+MyList,List
+
+Association
+Auftrag,MyList
 
 /Model

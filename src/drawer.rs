@@ -30,6 +30,7 @@ pub fn get_image(mut model: ModelContainer) -> (image::ImageBuffer<image::Bgra<u
     match model.model_type {
         ModelType::ClassModel => {
             let cm = model.class_model.unwrap();
+//            println!("\n\n\n ======= Debuggin ClassModel =======\n{:?}\n================", cm);
             let (a, b, c, d) = generator::generate_class_model_layout(
                 &cm.classes,
                 &cm.relations
