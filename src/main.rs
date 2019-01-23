@@ -10,8 +10,11 @@ pub(crate) mod parser;
 //pub(crate) mod generator;
 //pub(crate) mod drawer;
 mod reader;
+use reader::*;
 //mod gui;
 mod defines;
+use std::str::*;
+use std::env::*;
 use defines::*;
 
 //========== Global constants ==========
@@ -58,8 +61,12 @@ fn main() {
                      "Chinese,Person".to_string(),
                      "1,1".to_string(),
                      "/Model".to_string()];
-
-    let mc = match parser::parse_model(&lines) {
+    let current_working_directory = current_dir().ok().and_then(|p| Some(p.to_str().unwrap_or("/").to_string())).unwrap_or_default();;
+    let stringo = match reader::read_from_file(&*format!("{}/{}", current_working_directory, "input.txt")) {
+        Ok(val) => val,
+        Err(err) => return,
+    };
+    let mc = match parser::parse_model(&stringo) {
         Ok(val) => val,
         Err(err) => {
             println!("Encountered error while parsing: {}", err);
