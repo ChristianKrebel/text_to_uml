@@ -36,7 +36,7 @@ struct AppData {
 impl Default for AppData {
     fn default() -> Self {
         Self {
-            input_file_name: TextInputState::new("input.txt"),
+            input_file_name: TextInputState::new("input_class.txt"),
             output_file_name: TextInputState::new("output.png"),
             input_model_structure: TextInputState::new("Model:Object
 

@@ -98,7 +98,7 @@ private String description
 //                     "".to_string(),
 //                     "/Model".to_string()];
 //    let current_working_directory = current_dir().ok().and_then(|p| Some(p.to_str().unwrap_or("/").to_string())).unwrap_or_default();;
-//    let stringo = match reader::read_from_file(&*format!("{}/{}", current_working_directory, "input.txt")) {
+//    let stringo = match reader::read_from_file(&*format!("{}/{}", current_working_directory, "input_class.txt")) {
 //        Ok(val) => val,
 //        Err(err) => return,
 //    };
@@ -118,7 +118,7 @@ private String description
 //    };
 
     // So sollten Bilder eigentlich geladen werden:
-    // let (input_filename, output_filename) = get_cli_args("input.txt", "output.png");
+    // let (input_filename, output_filename) = get_cli_args("input_class.txt_class", "output.png");
     // let (classes, relations) = parser::init(&input_filename).unwrap();
     // let image_buf = generator::generate_pic(&classes, &relations);
     // image_buf.save(&Path::new(&output_filename)).unwrap();

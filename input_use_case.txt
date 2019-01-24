@@ -1,0 +1,33 @@
+Model:UseCase
+
+System:Bank
+
+Actor:customer
+Kunde
+
+Actor:employee
+Bank Angestellter
+
+UseCase:openAccount
+Konto eröffnen
+
+UseCase:depositFunds
+Geld einzahlen
+
+UseCase:calcBonus
+Bonus berechnen
+
+Extend
+calcBonus,depositFunds
+Wenn Geld größer als 10.000€
+
+Association
+customer,openAccount
+
+Association
+customer,depositFunds
+
+Association
+employee,openAccount
+
+/Model

@@ -533,10 +533,26 @@ pub fn parse_model(lines: &[String]) -> Result<ModelContainer, ParseError> {
             ModelContainer {model_type: ModelType::ObjectModel, class_model: None, object_model: Some(object_model), package_model: None, use_case_model: None}
         },
         ModelType::PackageModel => {
-            return Err(ParseError::InvalidModelError);
+            let package_model = match pack_package_model(all_lines.as_bytes()){
+                Ok(val) => val.1,
+                Err(err) => {
+                    println!("Encountered error while parsing: {}", err);
+                    return Err(ParseError::ParseError);
+                }
+            };
+
+            ModelContainer {model_type: ModelType::ObjectModel, class_model: None, object_model: None, package_model: Some(package_model), use_case_model: None}
         },
         ModelType::UseCaseModel => {
-            return Err(ParseError::InvalidModelError);
+            let uc_model = match uc_use_case_model(all_lines.as_bytes()){
+                Ok(val) => val.1,
+                Err(err) => {
+                    println!("Encountered error while parsing: {}", err);
+                    return Err(ParseError::ParseError);
+                }
+            };
+
+            ModelContainer {model_type: ModelType::ObjectModel, class_model: None, object_model: None, package_model: None, use_case_model: Some(uc_model)}
         },
         ModelType::None => return Err(ParseError::InvalidModelError)
     };
