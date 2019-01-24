@@ -150,11 +150,11 @@ Im Folgenden findet sich ein Beispiel für ein ganzes UML-Klassendiagramm:
     
     AbstractClass:Person
     --
-    private String name
+    package String name
     private String vorname
     --
     public String getFullName()
-
+    
     Class:Angestellter
     --
     private static int ID
@@ -162,7 +162,7 @@ Im Folgenden findet sich ein Beispiel für ein ganzes UML-Klassendiagramm:
     --
     public Auftrag auftragErstellen()
     public void auftragBearbeiten()
-
+    
     Class:Auftrag
     --
     private MyList<Item> inhalt
@@ -170,9 +170,9 @@ Im Folgenden findet sich ein Beispiel für ein ganzes UML-Klassendiagramm:
     --
     public void setDone(boolean isDone)
     public int getCumulativePrice()
-    public ArrayList<Item> getInhalt()
-
-    Class:Item
+    protected ArrayList<Item> getInhalt()
+    
+    ActiveClass:Item
     --
     private String description
     private int singlePrice
@@ -181,30 +181,36 @@ Im Folgenden findet sich ein Beispiel für ein ganzes UML-Klassendiagramm:
     public String getDescription()
     public int getSinglePrice()
     public int getCountInStock()
-    public void changeCountInStock(int amount)
-
+    public void changeCountInStock(int amount, Auftrag auftrag)
+    
     Class:MyList
     
     Class:List
     <<interface>>
-
+    --
+    
     Inheritance
     Angestellter,Person
     1,1
-
+    
     Association
     Angestellter,Auftrag
     0..n,1
-
+    
     Aggregation
     Item,Auftrag
     1,1..n
-
+    
     Implementation
     MyList,List
-
-    Association
+    
+    Dependency
     Auftrag,MyList
+    
+    Composition
+    List,Item
+    
+    /Model
 
 Welches zu folgendem Bild führt:  
 
