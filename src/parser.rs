@@ -176,14 +176,26 @@ named!(cd_variable_pair<&[u8], String>,
     )
 );
 
+named!(cd_params_variable_pair<&[u8], String>,
+    do_parse!(
+        not!(tag!(&b")"[..])) >>
+        take_while!(is_ws) >>
+        data_type: parse_till_ws >>
+        tag!(&b" "[..]) >>
+        var_name: map!(map!(take_while!(is_not_comma_and_cb), str::from_utf8), std::result::Result::unwrap) >>
+        (format!("{}: {}", var_name, data_type))
+    )
+);
+
 named!(cd_method_pair<&[u8], String>,
     do_parse!(
         take_while!(is_ws) >>
         data_type: parse_till_ws >>
         var_name: map!(map!(take_while!(is_not_ob_and_newline), str::from_utf8), std::result::Result::unwrap) >>
         tag!(&b"("[..]) >>
-        params: parse_till_newline >>
-        (format!("{}({}: {}", var_name, params, data_type))
+        params: opt!(separated_list!(tag!(&b", "[..]), cd_params_variable_pair)) >>
+        tag!(&b")"[..]) >>
+        (format!("{}({}): {}", var_name, if params.is_some() {params.unwrap().join(", ")} else {String::from("")}, data_type))
     )
 );
 
@@ -644,6 +656,10 @@ fn is_not_comma_and_newline(c: u8) -> bool {
     return c != b',' && c != b'\n';
 }
 
+fn is_not_comma_and_cb(c: u8) -> bool {
+    return c != b',' && c != b')';
+}
+
 fn is_not_colon(c: u8) -> bool {
     return c != b':';
 }
@@ -1002,7 +1018,21 @@ fn test_cd_method_with_params(){
         }
     };
 
-    assert_eq!(line.content, "+ shoutName(int amount): void");
+    assert_eq!(line.content, "+ shoutName(amount: int): void");
+    assert_eq!(line.decor, TextDecoration::Italic);
+}
+
+#[test]
+fn test_cd_method_with_multiple_params(){
+    let line: Line = match cd_method(&b" public abstract void shoutName(int amount, float volume)\n\n "[..]){
+        Ok(val) => val.1,
+        Err(err) => {
+            assert!(false, "Line parsing unsuccessful: {}", err);
+            return;
+        }
+    };
+
+    assert_eq!(line.content, "+ shoutName(amount: int, volume: float): void");
     assert_eq!(line.decor, TextDecoration::Italic);
 }
 
@@ -1020,7 +1050,7 @@ fn test_cd_method_pair_params(){
         }
     };
 
-    assert_eq!(line, " shoutName(int amount): void");
+    assert_eq!(line, " shoutName(amount: int): void");
 }
 
 

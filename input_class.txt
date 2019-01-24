@@ -29,7 +29,7 @@ private int countInStock
 public String getDescription()
 public int getSinglePrice()
 public int getCountInStock()
-public void changeCountInStock(int amount)
+public void changeCountInStock(int amount, Auftrag auftrag)
 
 Class:MyList
 
