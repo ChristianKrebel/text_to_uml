@@ -10,6 +10,13 @@
    1. [Objekte](#objekte)  
    1. [Links](#links)  
    1. [Testbeispiel 2](#testbeispiel-2) 
+   1. [Pakete](#pakete)  
+   1. [Relationen](#relationen)  
+   1. [Testbeispiel 3](#testbeispiel-3)
+   1. [System](#system)  
+   1. [Akteure](#akteure)
+   1. [Use-Cases](#use-cases)
+   1. [Testbeispiel 4](#testbeispiel-4) 
 1. [Ablauf und Funktionen](#ablauf-und-funktionen)  
 
 # Aufgabenstellung
@@ -131,7 +138,7 @@ Es existieren beispielsweise schon die Klassen `Person` und `Angestellter`.
 
 ---
 
-### Beispiel: Klassendiagramm
+### Testbeispiel 1
 Im Folgenden findet sich ein Beispiel für ein ganzes UML-Klassendiagramm:
 
 
@@ -267,7 +274,7 @@ Es existieren beispielsweise schon die Objekte "Maren" mit dem internen Namen `m
 
 ---
 
-### Beispiel: Objektdiagramm
+### Testbeispiel 2
 Im Folgenden findet sich ein Beispiel für ein ganzes UML-Objektdiagramm:
 
 
@@ -354,7 +361,7 @@ Die Parameter stehen für:
 
 `<PackageFrom>,<PackageTo>` - Die Richtung der Relation zwischen den Paketen.
 
-### Beispiel: Paketdiagramm
+### Testbeispiel 3
 
 Im Folgenden findet sich ein Beispiel für ein ganze Spezifikation eines UML-Paketdiagramms:
 
@@ -478,7 +485,7 @@ Die Parameter stehen für:
 
 `<UseCaseTo>` - Die Aktion, die ausgeführt werden soll
 
-### Beispiel: Use-Case-Diagramm
+### Testbeispiel 4
 
 Im Folgenden findet sich ein Beispiel für eine vollständige Spezifikation eines UML-Use-Case-Diagramms.  
 Beachten Sie die korrekte Reihenfolge der Elemente:
