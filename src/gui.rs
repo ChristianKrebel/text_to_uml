@@ -76,7 +76,8 @@ klaudia,lg
 
 Link:besucht
 maren,lg
-"),
+
+/Model"),
             current_image: None,
             status: String::new()
         }

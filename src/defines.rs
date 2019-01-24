@@ -203,7 +203,7 @@ pub struct ObjectModel{
 #[derive(Debug)]
 pub struct Package{
     pub package_name: String,
-    pub inner_packages: Vec<Package>
+    pub inner_packages: Option<Vec<String>>
 }
 
 #[derive(Debug)]
@@ -217,7 +217,7 @@ pub struct PackageRelation{
 #[derive(PartialEq)]
 pub enum PackageRelName{
     Import,
-    Acces,
+    Access,
     Merge,
     None
 }
@@ -237,7 +237,7 @@ pub struct System{
 
 #[derive(Debug)]
 pub struct UseCase{
-    pub content_lines: Vec<String>
+    pub name: String
 }
 
 #[derive(Debug)]

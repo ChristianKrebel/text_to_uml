@@ -139,6 +139,7 @@ pub fn get_image(mut model: ModelContainer) -> (image::ImageBuffer<image::Bgra<u
         }
         ModelType::ObjectModel => {
             let om = model.object_model.unwrap();
+            //println!(" ====== DEBUG ======\n\n\n{:?}\n\n\n ===================", om);
             for (i, o) in om.objects.iter().enumerate() {
                 draw_object(&mut img_buf, &general, &font_vec, &o, &layout_vec[i]);
             }

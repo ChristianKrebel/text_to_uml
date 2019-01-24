@@ -180,7 +180,7 @@ named!(cd_method_pair<&[u8], String>,
     do_parse!(
         take_while!(is_ws) >>
         data_type: parse_till_ws >>
-        var_name: map!(map!(take_while!(is_not_ob_or_newline), str::from_utf8), std::result::Result::unwrap) >>
+        var_name: map!(map!(take_while!(is_not_ob_and_newline), str::from_utf8), std::result::Result::unwrap) >>
         tag!(&b"("[..]) >>
         params: parse_till_newline >>
         (format!("{}({}: {}", var_name, params, data_type))
@@ -246,13 +246,136 @@ named!(cd_class<&[u8], Class>,
 named!(cd_class_model<&[u8], ClassModel>,
     do_parse!(
         classes: many1!(cd_class) >>
-//        relations: many0!(cd_relation) >>
         relations: many_till!(cd_relation, pair!(take_while!(is_ws), tag!(&b"/Model"[..]))) >>
-//        tag!(&b"/Model"[..]) >>
         (ClassModel { classes, relations: relations.0 })
     )
 );
 
+
+
+// ====== Object Model ======
+
+
+
+named!(obj_object_name<&[u8], String>,
+    do_parse!(
+        take_while!(is_ws) >>
+        tag!(&b"Object"[..]) >>
+        has_name: opt!(tag!(&b":"[..])) >>
+        obj_name: cond!(has_name.is_some(), map!(parse_till_newline, String::from)) >>
+        ( if obj_name.is_some() {obj_name.unwrap()} else {String::from("")} )
+    )
+);
+
+named!(obj_object_title<&[u8], String>,
+    do_parse!(
+        take_while!(is_ws) >>
+        obj_disp_name: map!(map!(take_while!(is_not_colon), str::from_utf8), std::result::Result::unwrap) >>
+        obj_disp_class: parse_till_newline >>
+        ( format!("{} {}", String::from(obj_disp_name), String::from(obj_disp_class)) )
+    )
+);
+
+//<AttributName>[:<AttributTyp>] <AttributInhalt>
+named!(obj_line<&[u8], String>,
+    do_parse!(
+        take_while!(is_ws) >>
+        attrib_name_type: map!(parse_till_ws, get_fitting_object_line_name_type) >>
+        attrib_content: parse_till_newline >>
+        ( format!("{}{} = {}", attrib_name_type.0, attrib_name_type.1, attrib_content) )
+    )
+);
+
+named!(obj_object<&[u8], Object>,
+    do_parse!(
+        obj_name: obj_object_name >>
+        obj_title: obj_object_title >>
+        lines: many_till!(obj_line, alt!(tag!(&b"\n\n"[..]) | tag!(&b"\n/Model"[..]))) >>
+        (Object { object_intern_name: obj_name, object_title: obj_title, content_lines: lines.0 })
+    )
+);
+
+named!(obj_link<&[u8], Link>,
+    do_parse!(
+        take_while!(is_ws) >>
+        tag!(&b"Link"[..]) >>
+        link_name: map!(opt!(map!(map!(take_while!(is_not_newline), str::from_utf8), std::result::Result::unwrap)), get_fitting_link_name) >>
+        link_direction: cd_relation_direction >>
+        link_roles: map!(opt!(cd_relation_cardinality), get_fitting_link_roles) >>
+        ( Link { link_name, from_object: link_direction.0, to_object: link_direction.1, from_object_role: link_roles.0, to_object_role: link_roles.1 } )
+    )
+);
+
+
+named!(obj_object_model<&[u8], ObjectModel>,
+    do_parse!(
+        objects: many1!(obj_object) >>
+        links: many_till!(obj_link, pair!(take_while!(is_ws), tag!(&b"/Model"[..]))) >>
+        (ObjectModel { objects, links: links.0 })
+    )
+);
+
+
+
+
+// ====== Package Model ======
+
+named!(pack_relation_type<&[u8], PackageRelName>,
+    do_parse!(
+        take_while!(is_ws) >>
+        relation_type: alt!(
+            value!(PackageRelName::Import, tag!(&b"Import"[..]))       |
+            value!(PackageRelName::Access, tag!(&b"Access"[..]))       |
+            value!(PackageRelName::Merge, tag!(&b"Merge"[..]))
+        ) >>
+        (relation_type)
+    )
+);
+
+named!(pack_package_name<&[u8], String>,
+    do_parse!(
+        take_while!(is_ws) >>
+        tag!(&b"Package:"[..]) >>
+        package_name: parse_till_newline >>
+        ( String::from(package_name) )
+    )
+);
+
+named!(pack_sub_packages<&[u8], Vec<String>>,
+    do_parse!(
+        tag!(&b"\n"[..]) >>
+        not!(tag!(&b"\n"[..])) >>
+        sub_packages: separated_list!(tag!(&b","[..]), map!(map!(map!(take_while!(is_not_comma_and_newline), str::from_utf8), std::result::Result::unwrap), String::from)) >>
+        ( sub_packages )
+    )
+);
+
+named!(pack_package<&[u8], Package>,
+    do_parse!(
+        package_name: pack_package_name >>
+        sub_packages: opt!(pack_sub_packages) >>
+        ( Package { package_name, inner_packages: sub_packages } )
+    )
+);
+
+named!(pack_relation<&[u8], PackageRelation>,
+    do_parse!(
+        relation_type: pack_relation_type >>
+        direction: cd_relation_direction >>
+        ( PackageRelation { package_rel_name: relation_type, from_package: direction.0, to_package: direction.1 } )
+    )
+);
+
+named!(pack_package_model<&[u8], PackageModel>,
+    do_parse!(
+        packages: many1!(pack_package) >>
+        relations: many_till!(pack_relation, pair!(take_while!(is_ws), tag!(&b"/Model"[..]))) >>
+        (PackageModel { packages, relations: relations.0 })
+    )
+);
+
+
+// ====== Test Parser ======
 
 named!(test<&[u8], Vec<String>>,
     do_parse!(
@@ -307,7 +430,15 @@ pub fn parse_model(lines: &[String]) -> Result<ModelContainer, ParseError> {
             ModelContainer {model_type: ModelType::ClassModel, class_model: Some(class_model), object_model: None, package_model: None, use_case_model: None}
         },
         ModelType::ObjectModel => {
-            return Err(ParseError::InvalidModelError);
+            let object_model = match obj_object_model(all_lines.as_bytes()){
+                Ok(val) => val.1,
+                Err(err) => {
+                    println!("Encountered error while parsing: {}", err);
+                    return Err(ParseError::ParseError);
+                }
+            };
+
+            ModelContainer {model_type: ModelType::ObjectModel, class_model: None, object_model: Some(object_model), package_model: None, use_case_model: None}
         },
         ModelType::PackageModel => {
             return Err(ParseError::InvalidModelError);
@@ -401,7 +532,15 @@ fn is_not_comma(c: u8) -> bool {
     return c != b',';
 }
 
-fn is_not_ob_or_newline(c: u8) -> bool {
+fn is_not_comma_and_newline(c: u8) -> bool {
+    return c != b',' && c != b'\n';
+}
+
+fn is_not_colon(c: u8) -> bool {
+    return c != b':';
+}
+
+fn is_not_ob_and_newline(c: u8) -> bool {
     return c != b'(' && c != b'\n';
 }
 
@@ -449,7 +588,52 @@ fn get_fitting_relation_type(rel_type: RelationType) -> (BorderType, RelationArr
     }
 }
 
-// ===============================
+fn get_fitting_link_name(vis: Option<&str>) -> String{
+    return match vis{
+        Some(t) => {
+            if t.starts_with(":"){
+                return t.chars().skip(1).take(t.len()-1).collect();
+            }else{
+                return String::from(t);
+            }
+        },
+        _ => String::from("")
+    }
+}
+
+fn get_fitting_link_roles(vis: Option<(String, String)>) -> (String, String){
+    return match vis{
+        Some(t) => t,
+        _ => (String::from(""), String::from(""))
+    }
+}
+
+fn get_fitting_object_line_name_type(name_type: &str) -> (String, String){
+    let mut split = name_type.split(":");
+
+
+    let attr_name = split.next().unwrap();
+
+    let attr_type_opt = split.next();
+
+
+    if !attr_type_opt.is_some() {
+        return (String::from(name_type), String::from(""));
+    }else{
+        let attr_type = format!(": {}", String::from(attr_type_opt.unwrap()));
+
+        return (String::from(attr_name), attr_type);
+    }
+}
+
+fn get_fitting_object_name(vis: Option<&str>) -> String{
+    return match vis{
+        Some(t) => String::from(t),
+        _ => String::from("")
+    }
+}
+
+// ===============================get_fitting_object_name
 
 
 
@@ -543,6 +727,10 @@ fn test_cd_visibility4(){
 }
 
 
+// +------------------------------------+
+// |      Test individual parsers       |
+// +------------------------------------+
+
 #[test]
 fn test_parse_till_gt(){
     assert_eq!(parse_till_gt(&b"  sumWeirdStr<>sdsd "[..]), Ok((&b">sdsd "[..], "sumWeirdStr<")));
@@ -550,12 +738,9 @@ fn test_parse_till_gt(){
 
 
 
-//#[test]
-//fn test_cd_horizontal_line(){
-//    assert_eq!(cd_horizontal_line(&b"  -- "[..]), Ok((&b" "[..], (String::from(""), TextDecoration::HorizontalLine))));
-//}
-
-
+// +------------------------------------+
+// |   Test CD member name/type pair    |
+// +------------------------------------+
 
 #[test]
 fn test_cd_variable_pair(){
@@ -563,7 +748,7 @@ fn test_cd_variable_pair(){
 }
 
 // +------------------------------------+
-// |   Test class diagram member line   |
+// |           Test CD member           |
 // +------------------------------------+
 
 #[test]
@@ -621,6 +806,11 @@ fn test_cd_member4(){
     assert_eq!(line.content, "~ number: int");
     assert_eq!(line.decor, TextDecoration::None);
 }
+
+
+// +------------------------------------+
+// |           Test CD Method           |
+// +------------------------------------+
 
 
 #[test]
@@ -694,6 +884,10 @@ fn test_cd_method_with_params(){
     assert_eq!(line.decor, TextDecoration::Italic);
 }
 
+// +------------------------------------+
+// |   Test CD Method name/type/params  |
+// +------------------------------------+
+
 #[test]
 fn test_cd_method_pair_params(){
     let line: String = match cd_method_pair(&b" void shoutName(int amount)\n\n "[..]){
@@ -709,7 +903,9 @@ fn test_cd_method_pair_params(){
 
 
 
-
+// +------------------------------------+
+// |         Test CD full line          |
+// +------------------------------------+
 
 #[test]
 fn test_cd_line1(){
@@ -724,6 +920,11 @@ fn test_cd_line1(){
     assert_eq!(line.content, "~ someFunc(): Boolean");
     assert_eq!(line.decor, TextDecoration::Underlined);
 }
+
+
+// +------------------------------------+
+// |         Test CD Class Type         |
+// +------------------------------------+
 
 #[test]
 fn test_cd_class_type1(){
@@ -755,9 +956,9 @@ fn test_cd_class_type2(){
 
 
 
-/*
- Complete class test
-*/
+// +------------------------------------+
+// |        Test CD full Classes        |
+// +------------------------------------+
 
 #[test]
 fn test_cd_class_complete1(){
@@ -815,9 +1016,11 @@ fn test_cd_class_complete3(){
 }
 
 
-/*
- Complete Relation test
-*/
+
+// +------------------------------------+
+// |       Test CD full Relations       |
+// +------------------------------------+
+
 
 #[test]
 fn test_cd_relation_complete_with_card(){
@@ -862,7 +1065,9 @@ fn test_cd_relation_complete_no_card(){
 }
 
 
-
+// +------------------------------------+
+// |         Test CD full model         |
+// +------------------------------------+
 
 #[test]
 fn test_cd_class_model_complete1(){
@@ -900,3 +1105,239 @@ fn test_cd_class_model_complete1(){
 
 //    assert!(false);
 }
+
+
+
+
+// +------------------------------------+
+// |        Test OBJ Object name        |
+// +------------------------------------+
+
+#[test]
+fn test_obj_object_name(){
+    assert_eq!(obj_object_name(&b" Object\n "[..]), Ok((&b"\n "[..], String::from(""))));
+}
+
+#[test]
+fn test_obj_object_name2(){
+    assert_eq!(obj_object_name(&b" Object:someName\n "[..]), Ok((&b"\n "[..], String::from("someName"))));
+}
+
+
+
+
+// +------------------------------------+
+// |        Test OBJ Object title       |
+// +------------------------------------+
+
+#[test]
+fn test_obj_object_title(){
+    assert_eq!(obj_object_title(&b" lieblingsgrieche:Restaurant\n "[..]), Ok((&b"\n "[..], String::from("lieblingsgrieche :Restaurant"))));
+}
+
+
+
+
+// +------------------------------------+
+// |        Test OBJ Object line        |
+// +------------------------------------+
+
+#[test]
+fn test_obj_line(){
+    assert_eq!(obj_line(&b" kategorie:Sterne 3\n "[..]), Ok((&b"\n "[..], String::from("kategorie: Sterne = 3"))));
+}
+
+#[test]
+fn test_obj_line2(){
+    assert_eq!(obj_line(&b" name \"Platon\"\n "[..]), Ok((&b"\n "[..], String::from("name = \"Platon\""))));
+}
+
+
+
+// +------------------------------------+
+// |        Test OBJ Object link        |
+// +------------------------------------+
+
+#[test]
+fn test_obj_link(){
+    let link = match obj_link(&b" Link\nk1,lg\n+Arbeitnehmer,+Arbeitgeber\n\n "[..]){
+        Ok(val) => {
+            println!("Found link: {:?}", val.1);
+            val.1
+        },
+        Err(err) => {
+            assert!(false, "Relation parsing unsuccessful: {}", err);
+            return;
+        }
+    };
+
+    assert_eq!(link.link_name, String::from(""));
+    assert_eq!(link.from_object, String::from("k1"));
+    assert_eq!(link.to_object, String::from("lg"));
+    assert_eq!(link.from_object_role, String::from("+Arbeitnehmer"));
+    assert_eq!(link.to_object_role, String::from("+Arbeitgeber"));
+}
+
+
+#[test]
+fn test_obj_link2(){
+    let link = match obj_link(&b" Link:bedient\nk1,maren\n\n "[..]){
+        Ok(val) => {
+            println!("Found link: {:?}", val.1);
+            val.1
+        },
+        Err(err) => {
+            assert!(false, "Relation parsing unsuccessful: {}", err);
+            return;
+        }
+    };
+
+    assert_eq!(link.link_name, String::from("bedient"));
+    assert_eq!(link.from_object, String::from("k1"));
+    assert_eq!(link.to_object, String::from("maren"));
+    assert_eq!(link.from_object_role, String::from(""));
+    assert_eq!(link.to_object_role, String::from(""));
+}
+
+
+
+// +------------------------------------+
+// |        Test OBJ Object Model       |
+// +------------------------------------+
+
+#[test]
+fn test_obj_model(){
+    let object_model = match obj_object_model(&b"Object:lg\nlieblingsgrieche:Restaurant\nkategorie:Sterne 3\nname \"Platon\"\n\nObject:maren\nmaren:Gast\nstatus \"Koenig\"\ngeldbetrag:EUR 300\n\nLink:besucht\nmaren,lg\n\n/Model "[..]){
+        Ok(val) => {
+            println!("Found link: {:?}", val.1);
+            val.1
+        },
+        Err(err) => {
+            assert!(false, "Relation parsing unsuccessful: {}", err);
+            return;
+        }
+    };
+
+    let objects = object_model.objects;
+    for object in &objects {
+        println!("Object: {:?}", object);
+    }
+
+    let links = object_model.links;
+    for link in &links {
+        println!("Link: {:?}", link);
+    }
+
+//    assert!(false);
+}
+
+
+
+
+
+// +------------------------------------+
+// |        Test PACK Package name      |
+// +------------------------------------+
+
+#[test]
+fn test_pack_package_name(){
+    assert_eq!(pack_package_name(&b" Package:AVeryLongName\n"[..]), Ok((&b"\n"[..], String::from("AVeryLongName"))));
+}
+
+
+
+#[test]
+fn test_pack_sub_packages(){
+    assert_eq!(pack_sub_packages(&b"\nSub1,Sub2,Sub3,AVeryLongName\n"[..]), Ok((&b"\n"[..], vec![String::from("Sub1"), String::from("Sub2"), String::from("Sub3"), String::from("AVeryLongName")])));
+}
+
+
+#[test]
+fn test_pack_package(){
+    let package = match pack_package(&b" Package:Main\nSub1,Sub2,Sub3\n\n "[..]){
+        Ok(val) => {
+            println!("Found link: {:?}", val.1);
+            val.1
+        },
+        Err(err) => {
+            assert!(false, "Relation parsing unsuccessful: {}", err);
+            return;
+        }
+    };
+
+    assert_eq!(package.package_name, String::from("Main"));
+    assert_eq!(package.inner_packages.is_some(), true);
+    assert_eq!(package.inner_packages.unwrap(), vec![String::from("Sub1"), String::from("Sub2"), String::from("Sub3")]);
+}
+
+#[test]
+fn test_pack_package2(){
+    let package = match pack_package(&b" Package:Main\n\n "[..]){
+        Ok(val) => {
+            println!("Found link: {:?}", val.1);
+            val.1
+        },
+        Err(err) => {
+            assert!(false, "Relation parsing unsuccessful: {}", err);
+            return;
+        }
+    };
+
+    assert_eq!(package.package_name, String::from("Main"));
+    assert_eq!(package.inner_packages.is_some(), false);
+}
+
+
+#[test]
+fn test_pack_relation(){
+    let relation = match pack_relation(&b"Import\nMain,Lib1\n"[..]){
+        Ok(val) => {
+            println!("Found relation: {:?}", val.1);
+            val.1
+        },
+        Err(err) => {
+            assert!(false, "Relation parsing unsuccessful: {}", err);
+            return;
+        }
+    };
+
+    assert_eq!(relation.package_rel_name, PackageRelName::Import);
+    assert_eq!(relation.from_package, String::from("Main"));
+    assert_eq!(relation.to_package, String::from("Lib1"));
+}
+
+
+
+// +------------------------------------+
+// |      Test PACK Package Model       |
+// +------------------------------------+
+
+#[test]
+fn test_pack_package_model(){
+    let package_model = match pack_package_model(&b"\nPackage:Main\nSub1,Sub2,Sub3\n\nPackage:Sub1\nSubSub1,SubSub2\n\nPackage:Sub2\n\nPackage:Sub3\n\nPackage:SubSub1\n\nPackage:SubSub2\n\nPackage:Other1\n\nPackage:Other2\n\nImport\nMain,Other1\n\nImport\nMain,Other2\n\n/Model "[..]){
+        Ok(val) => {
+            println!("Found package model: {:?}", val.1);
+            val.1
+        },
+        Err(err) => {
+            assert!(false, "Package model parsing unsuccessful: {}", err);
+            return;
+        }
+    };
+
+    let packages = package_model.packages;
+    for package in &packages {
+        println!("Package: {:?}", package);
+    }
+
+    let relations = package_model.relations;
+    for relation in &relations {
+        println!("Relation: {:?}", relation);
+    }
+
+//    assert!(false);
+}
+
+/*
+
+*/
