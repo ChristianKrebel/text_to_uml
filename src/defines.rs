@@ -246,19 +246,37 @@ pub struct Participant{
 }
 
 #[derive(Debug)]
-pub struct UseCaseRelation{
-    pub participant_rel_name: ParticipantRelName,
+pub struct ParticipantRelation{
+    pub participant_rel_type: ParticipantRelationType,
     pub border_type: BorderType,
     pub arrow_type: RelationArrow,
-    pub from: String,
-    pub to: String
+    pub from_actor: String,
+    pub to_actor: String
+}
+
+#[derive(Debug)]
+pub struct UseCaseRelation{
+    pub use_case_relation_type: UseCaseRelationType,
+    pub border_type: BorderType,
+    pub arrow_type: RelationArrow,
+    pub from_use_case: String,
+    pub to_use_case: String
 }
 
 #[derive(Debug)]
 #[derive(PartialEq)]
-pub enum ParticipantRelName{
+pub enum ParticipantRelationType{
+    Association,
+    Generalization,
+    None
+}
+
+#[derive(Debug)]
+#[derive(PartialEq)]
+pub enum UseCaseRelationType{
     Include,
     Extend,
+    Generalize,
     None
 }
 
