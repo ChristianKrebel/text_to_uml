@@ -375,6 +375,98 @@ named!(pack_package_model<&[u8], PackageModel>,
 );
 
 
+
+// ====== UseCase Model ======
+
+
+named!(uc_system<&[u8], System>,
+    do_parse!(
+        take_while!(is_ws) >>
+        tag!(&b"System:"[..]) >>
+        system_name: parse_till_newline >>
+        ( System { name: String::from(system_name) } )
+    )
+);
+
+named!(uc_actor<&[u8], Actor>,
+    do_parse!(
+        take_while!(is_ws) >>
+        tag!(&b"Actor:"[..]) >>
+        actor_name_intern: map!(parse_till_newline, String::from) >>
+        actor_name_display: opt!(tuple!(tag!(&b"\n"[..]), not!(tag!(&b"\n"[..])), map!(parse_till_newline, String::from))) >>
+        ( Actor { name_intern: actor_name_intern.clone(), name_display: if actor_name_display.is_some() {actor_name_display.unwrap().2} else {actor_name_intern} } )
+    )
+);
+
+named!(uc_actor_actor_relation<&[u8], ActorActorRelation>,
+    do_parse!(
+        take_while!(is_ws) >>
+        alt!(tag!(&b"Generalization"[..]) |
+             tag!(&b"Generalisation"[..])) >>
+        tag!(&b"\n"[..]) >>
+        direction: cd_relation_direction >>
+        ( ActorActorRelation { border_type: BorderType::Solid, arrow_type: RelationArrow::TriangleEmpty, from_actor: direction.0, to_actor: direction.1 } )
+    )
+);
+
+named!(uc_use_case<&[u8], UseCase>,
+    do_parse!(
+        take_while!(is_ws) >>
+        tag!(&b"UseCase:"[..]) >>
+        uc_name_intern: map!(parse_till_newline, String::from) >>
+        uc_name_display: opt!(tuple!(tag!(&b"\n"[..]), not!(tag!(&b"\n"[..])), map!(parse_till_newline, String::from))) >>
+        ( UseCase { name_intern: uc_name_intern.clone(), name_display: if uc_name_display.is_some() {uc_name_display.unwrap().2} else {uc_name_intern} } )
+    )
+);
+
+
+named!(uc_use_case_relation_type<&[u8], UseCaseRelationType>,
+    do_parse!(
+        take_while!(is_ws) >>
+        relation_type: alt!(
+            value!(UseCaseRelationType::Include, tag!(&b"Include"[..]))              |
+            value!(UseCaseRelationType::Extend, tag!(&b"Extend"[..]))                |
+            value!(UseCaseRelationType::Generalize, alt!(tag!(&b"Generalize"[..])  |
+                                                         tag!(&b"Generalise"[..])))
+        ) >>
+        (relation_type)
+    )
+);
+
+named!(uc_use_case_use_case_relation<&[u8], UseCaseUseCaseRelation>,
+    do_parse!(
+        take_while!(is_ws) >>
+        relation_type: uc_use_case_relation_type >>
+        direction: cd_relation_direction >>
+        note: opt!(tuple!(tag!(&b"\n"[..]), not!(tag!(&b"\n"[..])), map!(parse_till_newline, String::from))) >>
+        ( UseCaseUseCaseRelation { border_arrow_type: get_fitting_uc_relation_type(&relation_type), relation_type: relation_type, from_use_case: direction.0, to_use_case: direction.1, note: if note.is_some() {Some(note.unwrap().2)} else {None} } )
+    )
+);
+
+named!(uc_actor_use_case_relation<&[u8], ActorUseCaseRelation>,
+    do_parse!(
+        take_while!(is_ws) >>
+        tag!(&b"Association\n"[..]) >>
+        direction: cd_relation_direction >>
+        ( ActorUseCaseRelation { border_type: BorderType::Solid, arrow_type: RelationArrow::None, from_actor: direction.0, to_use_case: direction.1 } )
+    )
+);
+
+
+named!(uc_use_case_model<&[u8], UseCaseModel>,
+    do_parse!(
+        system: uc_system >>
+        actors: many1!(uc_actor) >>
+        aa_relation: many0!(uc_actor_actor_relation) >>
+        use_cases: many1!(uc_use_case) >>
+        ucuc_relation: many0!(uc_use_case_use_case_relation) >>
+        auc_relation: many_till!(uc_actor_use_case_relation, pair!(take_while!(is_ws), tag!(&b"/Model"[..]))) >>
+        (UseCaseModel { system, use_cases, actors, actor_actor_relations: aa_relation, use_case_use_case_relations: ucuc_relation, actor_use_case_relations: auc_relation.0 })
+    )
+);
+
+
+
 // ====== Test Parser ======
 
 named!(test<&[u8], Vec<String>>,
@@ -633,15 +725,29 @@ fn get_fitting_object_name(vis: Option<&str>) -> String{
     }
 }
 
-// ===============================get_fitting_object_name
+fn get_fitting_uc_relation_type(rel_type: &UseCaseRelationType) -> (BorderType, RelationArrow){
+    return match rel_type{
+        UseCaseRelationType::Include => (BorderType::Dashed, RelationArrow::Arrow),
+        UseCaseRelationType::Extend => (BorderType::Dashed, RelationArrow::Arrow),
+        UseCaseRelationType::Generalize => (BorderType::Solid, RelationArrow::TriangleEmpty)
+    }
+}
+
+// ===============================
 
 
 
 
 
-/*
- * Test code
- */
+
+
+
+// | .================================================================. |
+// | |                                                                | |
+// | |                           TEST CODE                            | |
+// | |                                                                | |
+// | '================================================================' |
+
 
 #[test]
 fn test_test1(){
@@ -1244,13 +1350,19 @@ fn test_pack_package_name(){
     assert_eq!(pack_package_name(&b" Package:AVeryLongName\n"[..]), Ok((&b"\n"[..], String::from("AVeryLongName"))));
 }
 
-
+// +------------------------------------+
+// |      Test PACK Sub Packages        |
+// +------------------------------------+
 
 #[test]
 fn test_pack_sub_packages(){
     assert_eq!(pack_sub_packages(&b"\nSub1,Sub2,Sub3,AVeryLongName\n"[..]), Ok((&b"\n"[..], vec![String::from("Sub1"), String::from("Sub2"), String::from("Sub3"), String::from("AVeryLongName")])));
 }
 
+
+// +------------------------------------+
+// |      Test PACK Package             |
+// +------------------------------------+
 
 #[test]
 fn test_pack_package(){
@@ -1287,6 +1399,10 @@ fn test_pack_package2(){
     assert_eq!(package.inner_packages.is_some(), false);
 }
 
+
+// +------------------------------------+
+// |        Test PACK Relation          |
+// +------------------------------------+
 
 #[test]
 fn test_pack_relation(){
@@ -1338,6 +1454,248 @@ fn test_pack_package_model(){
 //    assert!(false);
 }
 
-/*
 
+
+// +------------------------------------+
+// |           Test UC Actor            |
+// +------------------------------------+
+
+#[test]
+fn test_uc_actor(){
+    let actor = match uc_actor(&b"Actor:User\n\n"[..]){
+        Ok(val) => {
+            println!("Found relation: {:?}", val.1);
+            val.1
+        },
+        Err(err) => {
+            assert!(false, "Relation parsing unsuccessful: {}", err);
+            return;
+        }
+    };
+
+    assert_eq!(actor.name_intern, String::from("User"));
+    assert_eq!(actor.name_display, String::from("User"));
+}
+
+#[test]
+fn test_uc_actor2(){
+    let actor = match uc_actor(&b"Actor:u\nUser\n"[..]){
+        Ok(val) => {
+            println!("Found relation: {:?}", val.1);
+            val.1
+        },
+        Err(err) => {
+            assert!(false, "Relation parsing unsuccessful: {}", err);
+            return;
+        }
+    };
+
+    assert_eq!(actor.name_intern, String::from("u"));
+    assert_eq!(actor.name_display, String::from("User"));
+}
+
+
+
+// +------------------------------------+
+// |         Test UC AARelation         |
+// +------------------------------------+
+
+#[test]
+fn test_uc_actor_actor_relation(){
+    let aa_relation = match uc_actor_actor_relation(&b"Generalization\nm,User\n"[..]){
+        Ok(val) => {
+            println!("Found relation: {:?}", val.1);
+            val.1
+        },
+        Err(err) => {
+            assert!(false, "Relation parsing unsuccessful: {}", err);
+            return;
+        }
+    };
+
+    assert_eq!(aa_relation.from_actor, String::from("m"));
+    assert_eq!(aa_relation.to_actor, String::from("User"));
+    assert_eq!(aa_relation.border_type, BorderType::Solid);
+//  assert_eq!(aa_relation.arrow_type, RelationArrow::TriangleFilled); //Meaningless currently
+}
+
+
+// +------------------------------------+
+// |        Test UC UCUCRelation        |
+// +------------------------------------+
+
+#[test]
+fn test_uc_use_case_use_case_relation(){
+    let ucuc_relation = match uc_use_case_use_case_relation(&b"Include\nverifyLogin,login\n\n"[..]){
+        Ok(val) => {
+            println!("Found relation: {:?}", val.1);
+            val.1
+        },
+        Err(err) => {
+            assert!(false, "Relation parsing unsuccessful: {}", err);
+            return;
+        }
+    };
+
+    assert_eq!(ucuc_relation.from_use_case, String::from("verifyLogin"));
+    assert_eq!(ucuc_relation.to_use_case, String::from("login"));
+    assert_eq!(ucuc_relation.border_arrow_type, (BorderType::Dashed, RelationArrow::Arrow));
+    assert_eq!(ucuc_relation.note, None);
+    assert_eq!(ucuc_relation.relation_type, UseCaseRelationType::Include);
+}
+
+#[test]
+fn test_uc_use_case_use_case_relation2(){
+    let ucuc_relation = match uc_use_case_use_case_relation(&b"Extend\nverifyLogin,login\nDies ist eine Notiz\n"[..]){
+        Ok(val) => {
+            println!("Found relation: {:?}", val.1);
+            val.1
+        },
+        Err(err) => {
+            assert!(false, "Relation parsing unsuccessful: {}", err);
+            return;
+        }
+    };
+
+    assert_eq!(ucuc_relation.from_use_case, String::from("verifyLogin"));
+    assert_eq!(ucuc_relation.to_use_case, String::from("login"));
+    assert_eq!(ucuc_relation.border_arrow_type, (BorderType::Dashed, RelationArrow::Arrow));
+    assert_eq!(ucuc_relation.note, Some(String::from("Dies ist eine Notiz")));
+    assert_eq!(ucuc_relation.relation_type, UseCaseRelationType::Extend);
+}
+
+
+// +------------------------------------+
+// |        Test UC AUCRelation        |
+// +------------------------------------+
+
+#[test]
+fn test_uc_actor_use_case_relation(){
+    let auc_relation = match uc_actor_use_case_relation(&b"Association\nUser,login\n"[..]){
+        Ok(val) => {
+            println!("Found relation: {:?}", val.1);
+            val.1
+        },
+        Err(err) => {
+            assert!(false, "Relation parsing unsuccessful: {}", err);
+            return;
+        }
+    };
+
+    assert_eq!(auc_relation.from_actor, String::from("User"));
+    assert_eq!(auc_relation.to_use_case, String::from("login"));
+    assert_eq!(auc_relation.border_type, BorderType::Solid);
+    assert_eq!(auc_relation.arrow_type, RelationArrow::None);
+}
+
+
+
+// +------------------------------------+
+// |           Test UC UseCase          |
+// +------------------------------------+
+
+#[test]
+fn test_uc_use_case(){
+    let use_case = match uc_use_case(&b"UseCase:Anmeldedaten verifizieren\n\n"[..]){
+        Ok(val) => {
+            println!("Found Use Case: {:?}", val.1);
+            val.1
+        },
+        Err(err) => {
+            assert!(false, "Use Case parsing unsuccessful: {}", err);
+            return;
+        }
+    };
+
+    assert_eq!(use_case.name_intern, String::from("Anmeldedaten verifizieren"));
+    assert_eq!(use_case.name_display, String::from("Anmeldedaten verifizieren"));
+}
+
+#[test]
+fn test_uc_use_case2(){
+    let use_case = match uc_use_case(&b"UseCase:verifyLogin\nAnmeldedaten verifizieren\n"[..]){
+        Ok(val) => {
+            println!("Found Use Case: {:?}", val.1);
+            val.1
+        },
+        Err(err) => {
+            assert!(false, "Use Case parsing unsuccessful: {}", err);
+            return;
+        }
+    };
+
+    assert_eq!(use_case.name_intern, String::from("verifyLogin"));
+    assert_eq!(use_case.name_display, String::from("Anmeldedaten verifizieren"));
+}
+
+
+// +------------------------------------+
+// |      Test PACK Package Model       |
+// +------------------------------------+
+
+#[test]
+fn test_uc_use_case_model(){
+    let use_case_model = match uc_use_case_model(&b"\nSystem:Web Shop\n\nActor:User\n\nActor:m\nMember\n\nActor:adm\nAdmin\n\nGeneralization\nm,User\n\nGeneralization\nadm,m\n\nUseCase:login\nEinloggen\n\nUseCase:verifyLogin\nAnmeldedaten verifizieren\n\nGeneralize\nlogin,verifyLogin\n\nInclude\nverifyLogin,login\nIrgendeine Notiz die lang ist\n\nExtend\ngamble,winMoney\nWenn Spiel gewonnen\n\nAssociation\nUser,login\n/Model "[..]){
+        Ok(val) => {
+            println!("Found package model: {:?}", val.1);
+            val.1
+        },
+        Err(err) => {
+            assert!(false, "Package model parsing unsuccessful: {}", err);
+            return;
+        }
+    };
+
+    println!("System Name: {}", use_case_model.system.name);
+
+    let use_cases = use_case_model.use_cases;
+    for use_case in &use_cases {
+        println!("UseCase: {:?}", use_case);
+    }
+
+    let actors = use_case_model.actors;
+    for actor in &actors {
+        println!("Actor: {:?}", actor);
+    }
+
+    let actor_actor_relations = use_case_model.actor_actor_relations;
+    for actor_actor_relation in &actor_actor_relations {
+        println!("AA_Relation: {:?}", actor_actor_relation);
+    }
+
+    let actor_use_case_relations = use_case_model.actor_use_case_relations;
+    for actor_use_case_relation in &actor_use_case_relations {
+        println!("AUC_Relation: {:?}", actor_use_case_relation);
+    }
+
+    let use_case_use_case_relations = use_case_model.use_case_use_case_relations;
+    for use_case_use_case_relation in &use_case_use_case_relations {
+        println!("UCUC_Relation: {:?}", use_case_use_case_relation);
+    }
+
+//    assert!(false);
+}
+
+/*
+#[derive(Debug)]
+pub struct UseCaseModel{
+    pub system: System,
+    pub use_cases: Vec<UseCase>,
+    pub actors: Vec<Actor>,
+    pub actor_actor_relations: Vec<ActorActorRelation>,
+    pub actor_use_case_relations: Vec<ActorUseCaseRelation>,
+    pub use_case_use_case_relations: Vec<UseCaseUseCaseRelation>
+}
+
+named!(uc_use_case_model<&[u8], UseCaseModel>,
+    do_parse!(
+        system: uc_system >>
+        actors: many1!(uc_actor) >>
+        aa_relation: many0!(uc_actor_actor_relation) >>
+        use_cases: many1!(uc_use_case) >>
+        ucuc_relation: many0!(uc_use_case_use_case_relation) >>uc_actor_use_case_relation
+        auc_relation: many_till!(uc_actor_use_case_relation, pair!(take_while!(is_ws), tag!(&b"/Model"[..]))) >>
+        (UseCaseModel { system, use_cases, actors, actor_actor_relations: aa_relation, use_case_use_case_relation: ucuc_relation, actor_use_case_relation: auc_relation })
+    )
+);
 */

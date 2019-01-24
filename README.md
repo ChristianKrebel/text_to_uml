@@ -1,4 +1,4 @@
-![Logo](Logo.png)  
+﻿![Logo](Logo.png)  
 
 # ﻿Inhaltsverzeichnis
 1. [Aufgabenstellung](#aufgabenstellung)  
@@ -62,8 +62,8 @@ In einem Klassendiagramm gibt es zwei grundlegende Elemente: Klassen und Relatio
 ### Klassen
 Die Musterdefinition einer Klasse sieht wie folgt aus:
 
-**\<KlassenTyp\>,\<KlassenName\>
-[\<\<stereotyp\>\>]
+**\<KlassenTyp\>,\<KlassenName\>  
+[\<\<stereotyp\>\>]  
 [Inhalt...]**
 
 Dabei stehen die Parameter für:
@@ -104,8 +104,8 @@ Ein Beispiel für eine ganze Klasse:
 ### Relationen
 Auch Relationen haben eine Musterdefinition:
 
-**\<RelationsTyp\>
-\<VonKlasse\>,\<ZuKlasse\>
+**\<RelationsTyp\>  
+\<VonKlasse\>,\<ZuKlasse\>  
 [MultiVon,MultiZu]**
 
 Dabei stehen die Parameter für:
@@ -131,7 +131,7 @@ Es existieren beispielsweise schon die Klassen `Person` und `Angestellter`.
 
 ---
 
-### Testbeispiel 1
+### Beispiel: Klassendiagramm
 Im Folgenden findet sich ein Beispiel für ein ganzes UML-Klassendiagramm:
 
 
@@ -243,8 +243,8 @@ Ein Beispiel für ein ganzes Objekt:
 ### Links
 Auch Links haben eine Musterdefinition:
 
-**Link[:\<LinkName\>]
-\<VonObjekt\>,\<ZuObjekt\>
+**Link[:\<LinkName\>]  
+\<VonObjekt\>,\<ZuObjekt\>  
 [RolleVon,RolleZu]**
 
 Dabei stehen die Parameter für:
@@ -267,7 +267,7 @@ Es existieren beispielsweise schon die Objekte "Maren" mit dem internen Namen `m
 
 ---
 
-### Testbeispiel 2
+### Beispiel: Objektdiagramm
 Im Folgenden findet sich ein Beispiel für ein ganzes UML-Objektdiagramm:
 
 
@@ -309,10 +309,213 @@ Im Folgenden findet sich ein Beispiel für ein ganzes UML-Objektdiagramm:
     
     Link:besucht
     maren,lg
+    
+    /Model
 
 Welches zu folgendem Bild führt:  
 
 ![Object Model](Object.png)
+
+## Paketdiagramm
+
+Auch in einem Paketdiagramm gibt es zwei grundlegende Elemente: Pakete und Relationen. Jedes Paket kann dazu auch noch Unterpakete haben. Alle Elemente werden mit Leerzeilen voneinander getrennt.
+
+### Pakete
+
+Pakete sind wie folgt definiert:
+
+**Package:\<PaketName\>  
+[\<Unterpaket1\>,\<Unterpaket2\>, ...]**  
+
+Diese Parameter stehen für:
+
+`<PaketName>` -  Der Name des Pakets
+
+`[<Unterpaket1>,<Unterpaket2>, ...]` - Eine kommaseparierte Liste der Unterpakete. Optional und von beliebiger Länge.
+
+Ein Beispiel für das Main Paket in einem potentiellen Text_To_UML Projekt:
+
+    Package:main
+    gui,drawer,generator,reader,parser
+    
+### Relationen
+
+Relationen sind wie folgt definiert:
+
+**\<RelationType\>  
+\<PackageFrom\>,\<PackageTo\>**
+
+Die Parameter stehen für:
+
+`<RelationType>` -  Der Typ der Relation. Mögliche Werte sind:
+- `Import`
+- `Access`
+- `Merge`
+
+`<PackageFrom>,<PackageTo>` - Die Richtung der Relation zwischen den Paketen.
+
+### Beispiel: Paketdiagramm
+
+Im Folgenden findet sich ein Beispiel für ein ganze Spezifikation eines UML-Paketdiagramms:
+
+    Model:Package
+    
+    Package:main
+    gui,drawer,generator,reader,parser
+    
+    Package:gui
+    
+    Package:drawer
+    
+    Package:generator
+    
+    Package:reader
+    
+    Package:parser
+    
+    Package:azul
+    
+    Package:imageproc
+    
+    Package:nom
+    
+    Import
+    gui,azul
+    
+    Import
+    drawer,imageproc
+    
+    Import
+    parser,nom
+    
+    Access
+    drawer,parser
+    
+    /Model
+    
+## Use-Case-Diagramm
+
+Ein Use-Case-Diagramm dient zur Veranschaulichung von Aktionen (Use-Cases), die bestimmte Akteure in einem System tätigen können. Die Aktionen sowie die Akteure können Abhängigkeiten untereinander haben, und Akteure können Aktionen ausführen.  
+Die Spezifikation besteht aus vielen Elementen: System, Akteure, Abhängigkeiten unter Akteuren, Aktionen, Abhängigkeiten unter Aktionen, Zugriff von Akteuren auf Aktionen.  
+Wichtig ist die Reihenfolge der Spezifikation:
+    
+    System → Akteure → Akteur-Akteur-Relation → UseCase → UseCase-UseCase-Relation → Akteur-UseCase-Relation
+
+Wird diese Reihenfolge nicht eingehalten, wird der Parser die Eingabe nicht übersetzen können.
+
+### System
+
+Das System besteht aus einem einfachen Namen am oberen Rand der Systemgrenze. Spezifiziert wird dieser wie folgt:
+
+**System:\<SystemName\>**
+
+### Akteure
+
+Ein Akteur (engl. "Actor") definiert sich wie folgt:
+
+**Actor:\<ActorName\>  
+[\<ActorDisplayName\>]**
+
+Dabei stehen die Parameter für:
+
+`<ActorName>` - Der interne Name des Akteurs. Dieser wird als Adressierungsmerkmal für Relationen benutzt.
+
+`[<ActorDisplayName>]` - Der Anzeigename des Akteurs. Dies ist der Name, des in dem Ausgabebild angezeigt wird. Falls weggelassen, gleicht der Anzeigename dem internen Namen des Akteurs.
+
+### Use-Cases
+
+Eine Aktion definiert sich wie folgt:
+
+**UseCase:\<UseCaseName\>  
+[\<UseCaseDisplayName\>]**
+
+Dabei stehen die Parameter für:
+
+`<UseCaseName>` - Der interne Name der Aktion. Dieser wird als Adressierungsmerkmal für Relationen benutzt.
+
+`[<UseCaseDisplayName>]` - Der Anzeigename der Aktion. Dies ist der Name, des in dem Ausgabebild angezeigt wird. Falls weggelassen, gleicht der Anzeigename dem internen Namen des Akteurs.
+
+### Relationen
+
+Es gibt drei Arten von Relationen in Use-Case-Diagrammen, diese sind wie folgt spezifiziert:
+
+#### Relation: Akteur → Akteur:
+
+**Generalization  
+\<ActorNameFrom\>,\<ActorNameTo\>**
+
+Die Parameter stehen für:
+
+`<ActorNameFrom>` - Der interne Name des Akteurs, der von dem anderen Akteur erbt.
+
+`<ActorNameTo>` - Der interne Name des vererbenden Akteurs.
+
+#### Relation: Use-Case → Use-Case:
+
+**\<RelationType\>  
+\<UseCaseFrom\>,\<UseCaseTo\>  
+[\<Note\>]**
+
+Die Parameter stehen für:
+
+`<RelationType>` - Der Typ der Relation. Mögliche Werte sind:
+- `Include`
+- `Extend`
+- `Generalize`
+
+`<UseCaseFrom>,<UseCaseTo>` - Die teilhabenden Use-Cases. Die Pfeilrichtung geht von `<UseCaseFrom>` zu `<UseCaseTo>`
+
+`[<Note>]` - Eine Notiz, die der Relation angehängt werden kann. Bei `Extend`-Relationen soll hier die Bedingung stehen.
+
+#### Relation: Actor → Use-Case:
+
+**Association  
+\<ActorFrom\>,\<UseCaseTo\>**
+
+Die Parameter stehen für:
+
+`<ActorFrom>` - Der Akteur, der die entsprechende Aktion ausführen kann
+
+`<UseCaseTo>` - Die Aktion, die ausgeführt werden soll
+
+### Beispiel: Use-Case-Diagramm
+
+Im Folgenden findet sich ein Beispiel für eine vollständige Spezifikation eines UML-Use-Case-Diagramms.  
+Beachten Sie die korrekte Reihenfolge der Elemente:
+
+    Model:UseCase
+    
+    System:Bank
+    
+    Actor:customer
+    Kunde
+    
+    Actor:employee
+    Bank Angestellter
+    
+    UseCase:openAccount
+    Konto eröffnen
+    
+    UseCase:depositFunds
+    Geld einzahlen
+    
+    UseCase:calcBonus
+    Bonus berechnen
+    
+    Extend
+    calcBonus,depositFunds
+    Wenn Geld größer als 10.000€
+    
+    Association
+    customer,openAccount
+    
+    Association
+    customer,depositFunds
+    
+    Association
+    employee,openAccount
+    
+    /Model
 
 # Ablauf und Funktionen
 Im folgenden wird ein Sequenzdiagramm für "TextToUML" abgebildet. Anstatt Objekte werden Klassen genutzt, weswegen die Lebenszeit hier nicht zu ernst genommen werden soll, da die Stränge nur zur Übersicht bzw. Verständnis dienen.

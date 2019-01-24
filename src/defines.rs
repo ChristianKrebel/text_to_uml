@@ -109,6 +109,7 @@ pub enum RelationType{
 pub enum RelationArrow{
     Arrow,
     TriangleEmpty,
+//  TriangleFilled,
     DiamondEmpty,
     DiamondFilled,
     None
@@ -232,22 +233,31 @@ pub struct PackageModel{
 
 #[derive(Debug)]
 pub struct System{
-    pub system_name: String
-}
-
-#[derive(Debug)]
-pub struct UseCase{
     pub name: String
 }
 
 #[derive(Debug)]
-pub struct Participant{
-    pub participant_name: String
+pub struct UseCase{
+    pub name_intern: String,
+    pub name_display: String
 }
 
 #[derive(Debug)]
-pub struct ParticipantRelation{
-    pub participant_rel_type: ParticipantRelationType,
+pub struct Actor{
+    pub name_intern: String,
+    pub name_display: String
+}
+
+#[derive(Debug)]
+pub struct ActorUseCaseRelation {
+    pub border_type: BorderType,
+    pub arrow_type: RelationArrow,
+    pub from_actor: String,
+    pub to_use_case: String
+}
+
+#[derive(Debug)]
+pub struct ActorActorRelation {
     pub border_type: BorderType,
     pub arrow_type: RelationArrow,
     pub from_actor: String,
@@ -255,20 +265,12 @@ pub struct ParticipantRelation{
 }
 
 #[derive(Debug)]
-pub struct UseCaseRelation{
-    pub use_case_relation_type: UseCaseRelationType,
-    pub border_type: BorderType,
-    pub arrow_type: RelationArrow,
+pub struct UseCaseUseCaseRelation {
+    pub relation_type: UseCaseRelationType,
+    pub border_arrow_type: (BorderType, RelationArrow),
     pub from_use_case: String,
-    pub to_use_case: String
-}
-
-#[derive(Debug)]
-#[derive(PartialEq)]
-pub enum ParticipantRelationType{
-    Association,
-    Generalization,
-    None
+    pub to_use_case: String,
+    pub note: Option<String>
 }
 
 #[derive(Debug)]
@@ -276,16 +278,17 @@ pub enum ParticipantRelationType{
 pub enum UseCaseRelationType{
     Include,
     Extend,
-    Generalize,
-    None
+    Generalize
 }
 
 #[derive(Debug)]
 pub struct UseCaseModel{
     pub system: System,
     pub use_cases: Vec<UseCase>,
-    pub participants: Vec<Participant>,
-    pub relations: Vec<UseCaseRelation>
+    pub actors: Vec<Actor>,
+    pub actor_actor_relations: Vec<ActorActorRelation>,
+    pub actor_use_case_relations: Vec<ActorUseCaseRelation>,
+    pub use_case_use_case_relations: Vec<UseCaseUseCaseRelation>
 }
 
 #[derive(Debug)]
